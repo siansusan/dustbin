@@ -1,0 +1,1018 @@
+<title>Bin Enclosure Model</title>
+<meta name="description" content="Parametric 3D model of the HDPE bin enclosure and aluminum stand from the fabrication order sheet.">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg:#f3f1ea; --panel:#fffdf9; --panel-2:#ece8de; --ink:#1c2229; --muted:#646c76;
+    --accent:#2b5fd9; --accent-ink:#ffffff; --line:#c9c3b4; --grid:#e3ded0;
+    --dim:#c1512e; --ok:#3a7d55; --warn:#b8862c;
+    --mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+    --sans:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161b; --panel:#1a2028; --panel-2:#212832; --ink:#e7e9ec; --muted:#96a0ab;
+      --accent:#6f9bff; --accent-ink:#0d1420; --line:#333c48; --grid:#202832;
+      --dim:#ff8f68; --ok:#67c98a; --warn:#e0ac5b;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161b; --panel:#1a2028; --panel-2:#212832; --ink:#e7e9ec; --muted:#96a0ab;
+    --accent:#6f9bff; --accent-ink:#0d1420; --line:#333c48; --grid:#202832;
+    --dim:#ff8f68; --ok:#67c98a; --warn:#e0ac5b;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+
+  /* ---- top bar ---- */
+  #topbar{
+    display:flex; align-items:center; gap:14px; padding:10px 16px;
+    border-bottom:1px solid var(--line); background:var(--panel); flex:0 0 auto;
+    flex-wrap:wrap;
+  }
+  #topbar h1{
+    font-family:var(--mono); font-size:14px; font-weight:600; margin:0;
+    letter-spacing:.02em; white-space:nowrap;
+  }
+  #topbar h1 span{color:var(--muted); font-weight:400;}
+  .tb-group{display:flex; gap:6px; align-items:center; flex-wrap:wrap;}
+  .tb-sep{width:1px; height:22px; background:var(--line); margin:0 4px;}
+  button.tbtn{
+    font-family:var(--sans); font-size:12.5px; font-weight:500; color:var(--ink);
+    background:var(--panel-2); border:1px solid var(--line); border-radius:6px;
+    padding:6px 11px; cursor:pointer; white-space:nowrap;
+  }
+  button.tbtn:hover{border-color:var(--accent);}
+  button.tbtn.active{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  button.tbtn.primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  #spacer{flex:1 1 auto;}
+
+  /* ---- main layout ---- */
+  #main{flex:1 1 auto; display:flex; min-height:0;}
+  #viewport{flex:1 1 auto; position:relative; min-width:0;}
+  #canvas-wrap{position:absolute; inset:0;}
+  canvas{display:block;}
+
+  #sidebar{
+    width:340px; flex:0 0 340px; border-left:1px solid var(--line); background:var(--panel);
+    overflow-y:auto; padding:14px 14px 40px;
+  }
+  #sidebar::-webkit-scrollbar{width:9px;}
+  #sidebar::-webkit-scrollbar-thumb{background:var(--line); border-radius:5px;}
+
+  .section{margin-bottom:10px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--panel-2);}
+  .sec-head{
+    display:flex; align-items:center; gap:8px; padding:9px 12px; cursor:pointer;
+    font-family:var(--mono); font-size:12.5px; font-weight:600; letter-spacing:.02em;
+    user-select:none; background:var(--panel-2);
+  }
+  .sec-head .num{
+    color:var(--accent-ink); background:var(--accent); border-radius:4px; font-size:10.5px;
+    width:18px; height:18px; display:flex; align-items:center; justify-content:center; flex:0 0 auto;
+  }
+  .sec-head .chev{margin-left:auto; color:var(--muted); font-size:11px; transition:transform .15s;}
+  .section.collapsed .chev{transform:rotate(-90deg);}
+  .sec-body{padding:4px 12px 12px; background:var(--panel);}
+  .section.collapsed .sec-body{display:none;}
+
+  .field{margin:10px 0;}
+  .field label{
+    display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+    font-size:12px; color:var(--muted); margin-bottom:4px;
+  }
+  .field label .fname{color:var(--ink); font-weight:500;}
+  .field label .fval{font-family:var(--mono); color:var(--accent); font-weight:600; font-size:12px;}
+  .field input[type=range]{
+    width:100%; accent-color:var(--accent); height:4px; margin:2px 0;
+  }
+  .field.assumed label .fname::after{
+    content:" ⚠"; color:var(--warn); font-weight:400;
+  }
+  .field .note{font-size:10.5px; color:var(--warn); margin-top:2px; line-height:1.4;}
+  .checkline{display:flex; align-items:center; gap:8px; font-size:12.5px; padding:6px 0; color:var(--ink);}
+  .checkline input{accent-color:var(--accent);}
+
+  .readout{font-family:var(--mono); font-size:11.5px; line-height:1.75; color:var(--muted);}
+  .readout b{color:var(--ink); font-weight:600;}
+  .readout .r{color:var(--accent);}
+
+  .info-p{font-size:12px; line-height:1.55; color:var(--muted); margin:6px 0 10px;}
+  .badge{
+    display:inline-block; font-family:var(--mono); font-size:10px; padding:1px 6px;
+    border-radius:3px; background:var(--panel-2); border:1px solid var(--line); color:var(--muted); margin-right:4px;
+  }
+
+  /* dimension / component labels in 3D */
+  .lbl3d{
+    font-family:var(--mono); font-size:11px; color:var(--ink); background:var(--panel);
+    border:1px solid var(--line); border-radius:4px; padding:2px 6px; white-space:nowrap;
+    pointer-events:none; box-shadow:0 1px 3px rgba(0,0,0,.15);
+  }
+  .lbl3d.dim{color:var(--dim); border-color:var(--dim); font-weight:600;}
+  .lbl3d.part{color:var(--accent); border-color:var(--accent);}
+
+  #hud{
+    position:absolute; left:14px; bottom:14px; z-index:5; font-family:var(--mono); font-size:11px;
+    color:var(--muted); background:color-mix(in srgb, var(--panel) 85%, transparent); border:1px solid var(--line);
+    border-radius:8px; padding:8px 12px; max-width:340px; line-height:1.6; backdrop-filter:blur(4px);
+  }
+  #hud b{color:var(--ink);}
+
+  #loading{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:13px; color:var(--muted); background:var(--bg); z-index:20;
+  }
+
+  @media (max-width: 860px){
+    #main{flex-direction:column;}
+    #sidebar{width:100%; flex:0 0 auto; max-height:46vh; border-left:none; border-top:1px solid var(--line);}
+    #viewport{min-height:38vh;}
+    #topbar h1{display:none;}
+  }
+</style>
+
+<div id="topbar">
+  <h1>ENCLOSURE &amp; STAND <span>/ vendor issue 07 · parametric model</span></h1>
+  <div class="tb-group" id="view-btns">
+    <button class="tbtn" data-view="iso">Iso</button>
+    <button class="tbtn" data-view="front">Front</button>
+    <button class="tbtn" data-view="side">Side</button>
+    <button class="tbtn" data-view="top">Top</button>
+  </div>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <button class="tbtn" id="btn-cutaway">Cutaway</button>
+    <button class="tbtn" id="btn-labels">Labels</button>
+    <button class="tbtn" id="btn-dims">Dimensions</button>
+  </div>
+  <div id="spacer"></div>
+  <div class="tb-group">
+    <button class="tbtn" id="btn-export-json">Export Params (JSON)</button>
+    <button class="tbtn primary" id="btn-export-scad">Export CAD Model (.scad)</button>
+  </div>
+</div>
+
+<div id="main">
+  <div id="viewport">
+    <div id="canvas-wrap"></div>
+    <div id="loading">loading three.js…</div>
+    <div id="hud"></div>
+  </div>
+  <div id="sidebar"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================================
+   PARAMETERS  — extracted from Fabrication Order Sheet, Vendor Issue 07.
+   All lengths in centimetres. Every value traces to a spec line item;
+   fields flagged assumed:true are NOT given by the spec (dimensionally)
+   and are exposed only so the model can be visualised — they are called
+   out in the "Assumptions" panel and in the exported files.
+   ========================================================================= */
+const PARAMS = {
+  enclosure: {
+    overall_width:   { v: 20.0, min: 14, max: 30, step: 0.1, label: "Overall width (Base Panel / Lid)", src: "§1 · Overall Assembled Size" },
+    overall_depth:   { v: 18.0, min: 12, max: 26, step: 0.1, label: "Overall depth (Base Panel / Lid)", src: "§1 · Overall Assembled Size" },
+    wall_height:     { v: 30.5, min: 18, max: 45, step: 0.1, label: "Side wall height (Items 1.2 / 1.3)", src: "§1.2 / 1.3" },
+    wall_thickness:  { v: 0.5,  min: 0.2, max: 1.0, step: 0.05, label: "HDPE sheet thickness", src: "§1 · Material: 5 mm HDPE" },
+    upper_front_h:   { v: 17.5, min: 8, max: 24, step: 0.1, label: "Upper front panel height (1.5)", src: "§1.5" },
+    hole_dia:        { v: 1.6,  min: 0.5, max: 3, step: 0.1, label: "Front panel hole Ø (2×)", src: "§1.5 · 2× Ø16 mm" },
+    hole_offset_btm: { v: 3.0,  min: 0.5, max: 8, step: 0.1, label: "Hole height from panel bottom", src: "§1.5" },
+    hole_spacing:    { v: 8.0,  min: 2, max: 16, step: 0.1, label: "Hole-to-hole spacing", src: "assumed — spec gives \"centered horizontally\", no spacing value", assumed:true },
+    door_width:      { v: 18.8, min: 10, max: 22, step: 0.1, label: "Access door width (1.7)", src: "§1.7" },
+    door_height:     { v: 12.8, min: 6, max: 20, step: 0.1, label: "Access door height (1.7)", src: "§1.7" },
+    door_open:       { v: 0,    min: 0, max: 110, step: 1, label: "Door open angle", src: "hinged on left edge (1.7)" },
+    lid_open:        { v: 0,    min: 0, max: 100, step: 1, label: "Lid open angle", src: "hinged at rear (1.6)" },
+    divider_depth:   { v: 16.0, min: 6, max: 17.5, step: 0.1, label: "Internal divider depth (1.8)", src: "§1.8" },
+    divider_height:  { v: 13.0, min: 4, max: 20, step: 0.1, label: "Internal divider height (1.8)", src: "§1.8" },
+  },
+  internal: {
+    flap_width:    { v: 14.0, min: 6, max: 19, step: 0.1, label: "Tilting flap width (2.1)", src: "§2.1" },
+    flap_depth:    { v: 12.0, min: 4, max: 17, step: 0.1, label: "Tilting flap depth (2.1)", src: "§2.1" },
+    flap_thick:    { v: 0.3,  min: 0.2, max: 0.5, step: 0.05, label: "Flap thickness (3 mm)", src: "§2.1" },
+    flap_corner_r: { v: 0.5,  min: 0, max: 1.5, step: 0.05, label: "Flap corner radius", src: "§2.1 · 5 mm rounded" },
+    flap_tilt:     { v: 0,    min: -40, max: 40, step: 1, label: "Flap tilt angle (±40° spec)", src: "§2.1" },
+    caddy_width:   { v: 7.0,  min: 3, max: 9,  step: 0.1, label: "Caddy width (2.2 / 2.3)", src: "§2.2 / 2.3" },
+    caddy_depth:   { v: 15.0, min: 6, max: 17.5, step: 0.1, label: "Caddy depth", src: "§2.2 / 2.3" },
+    caddy_height:  { v: 12.5, min: 5, max: 20, step: 0.1, label: "Caddy height", src: "§2.2 / 2.3" },
+    caddy_lip:     { v: 1.0,  min: 0, max: 2.5, step: 0.1, label: "Front pull-out lip (10 mm)", src: "§2.2 / 2.3" },
+  },
+  stand: {
+    pole_od:        { v: 5.0,  min: 2, max: 9, step: 0.1, label: "Support pole OD (50 mm)", src: "§3.1" },
+    pole_wall:      { v: 0.25, min: 0.1, max: 0.6, step: 0.05, label: "Pole wall thickness (min 2.5 mm)", src: "§3.1" },
+    pole_length:    { v: 125.0,min: 60, max: 180, step: 1, label: "Pole length (1250 mm)", src: "§3.1" },
+    pole_hole_dia:  { v: 1.5,  min: 0.5, max: 3, step: 0.1, label: "Grommet hole Ø (2×, 15 mm)", src: "§3.1" },
+    pole_hole_top:  { v: 5.0,  min: 1, max: 20, step: 0.1, label: "Grommet hole — from top", src: "§3.1" },
+    pole_hole_btm:  { v: 5.0,  min: 1, max: 20, step: 0.1, label: "Grommet hole — from bottom", src: "§3.1" },
+    plate_width:    { v: 40.0, min: 20, max: 60, step: 0.5, label: "Base plate width × depth (40×40)", src: "§3.3" },
+    plate_thick:    { v: 1.9,  min: 0.6, max: 4, step: 0.1, label: "Base plate thickness (19 mm ply)", src: "§3.3" },
+    plate_hole_dia: { v: 0.9,  min: 0.3, max: 2, step: 0.1, label: "Base plate bolt hole Ø (4×, 9 mm)", src: "§3.3" },
+    bolt_circle:    { v: 12.0, min: 4, max: 30, step: 0.5, label: "Flange bolt-pattern spacing", src: "assumed — flange bolt circle not dimensioned in doc", assumed:true },
+    flange_dia:     { v: 10.0, min: 5, max: 20, step: 0.5, label: "Base flange Ø (illustrative)", src: "assumed — \"vendor must propose\" flange, no size given", assumed:true },
+    flange_height:  { v: 3.0,  min: 1, max: 8, step: 0.2, label: "Base flange height (illustrative)", src: "assumed — as above", assumed:true },
+    monitor_width:  { v: 25.0, min: 10, max: 45, step: 0.5, label: "Monitor width (illustrative)", src: "not in fabrication sheet — user clarified a monitor mounts on the pole", assumed:true },
+    monitor_height: { v: 16.0, min: 8,  max: 30, step: 0.5, label: "Monitor height (illustrative)", src: "not in fabrication sheet", assumed:true },
+    monitor_thick:  { v: 2.5,  min: 1,  max: 6,  step: 0.5, label: "Monitor thickness (illustrative)", src: "not in fabrication sheet", assumed:true },
+    monitor_offset: { v: 8.0,  min: 0,  max: 40, step: 0.5, label: "Monitor position — below pole top", src: "not in fabrication sheet", assumed:true },
+    bin_gap:        { v: 25.0, min: 5,  max: 80, step: 1, label: "Gap between bin and stand (bin sits separately)", src: "not in fabrication sheet — bin is a free-standing unit, per user clarification", assumed:true },
+  },
+  view: {
+    mount_on_stand: false,
+    show_labels: false,
+    show_dims: true,
+    cutaway: false,
+    transparency: 0.55,
+    explode: 0,
+  }
+};
+
+// Derived / structural relationships (recomputed every rebuild — never hand-edited)
+function derived(){
+  const e = PARAMS.enclosure, s = PARAMS.stand;
+  const clear_width = e.overall_width.v - 2*e.wall_thickness.v;              // §1.5 / 1.4: "clear width between the 5 mm side walls"
+  const lower_opening_h = e.wall_height.v - e.upper_front_h.v;               // remaining front height below the upper (fixed) panel
+  const door_clearance_w = clear_width - e.door_width.v;                    // spec: 1–2 mm perimeter clearance
+  const door_clearance_h = lower_opening_h - e.door_height.v;
+  const pole_inner_r = Math.max(0.01, s.pole_od.v/2 - s.pole_wall.v);
+  return { clear_width, lower_opening_h, door_clearance_w, door_clearance_h, pole_inner_r };
+}
+
+/* =========================================================================
+   THREE.JS SCENE
+   ========================================================================= */
+let scene, camera, renderer, labelRenderer, controls;
+let gStand, gEnclosure, gInternal, gDims, gLabels;
+let materials = {};
+
+function initScene(){
+  const wrap = document.getElementById('canvas-wrap');
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(getCss('--bg'));
+  scene.fog = new THREE.Fog(scene.background.getHex(), 260, 620);
+
+  camera = new THREE.PerspectiveCamera(40, wrap.clientWidth/wrap.clientHeight, 0.5, 2000);
+
+  renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  wrap.appendChild(renderer.domElement);
+
+  labelRenderer = new THREE.CSS2DRenderer();
+  labelRenderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  labelRenderer.domElement.style.position = 'absolute';
+  labelRenderer.domElement.style.top = '0';
+  labelRenderer.domElement.style.left = '0';
+  labelRenderer.domElement.style.pointerEvents = 'none';
+  wrap.appendChild(labelRenderer.domElement);
+
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.08;
+  controls.enablePan = true; controls.screenSpacePanning = true;
+  controls.minDistance = 8; controls.maxDistance = 600;
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.1));
+  const key = new THREE.DirectionalLight(0xffffff, 0.9);
+  key.position.set(60,120,80); scene.add(key);
+  const fill = new THREE.DirectionalLight(0xffffff, 0.35);
+  fill.position.set(-80,40,-60); scene.add(fill);
+
+  const grid = new THREE.GridHelper(400, 40, 0x888888, 0xcccccc);
+  grid.material.opacity = 0.18; grid.material.transparent = true;
+  scene.add(grid);
+
+  materials.hdpe = new THREE.MeshPhysicalMaterial({color:0xf1efe8, roughness:0.55, metalness:0.0, transparent:true, opacity:1, side:THREE.DoubleSide, clearcoat:0.1});
+  materials.hdpeDoor = new THREE.MeshPhysicalMaterial({color:0xe3e6ea, roughness:0.5, transparent:true, opacity:1, side:THREE.DoubleSide});
+  materials.divider = new THREE.MeshPhysicalMaterial({color:0xd8d3c4, roughness:0.6, transparent:true, opacity:1, side:THREE.DoubleSide});
+  materials.flap = new THREE.MeshPhysicalMaterial({color:0xcfd7de, roughness:0.35, transparent:true, opacity:0.9, side:THREE.DoubleSide});
+  materials.dryCaddy = new THREE.MeshStandardMaterial({color:0xc98a4b, roughness:0.6, transparent:true, opacity:0.95});
+  materials.wetCaddy = new THREE.MeshStandardMaterial({color:0x4d8fc9, roughness:0.5, transparent:true, opacity:0.9});
+  materials.pole = new THREE.MeshStandardMaterial({color:0xb9bec4, roughness:0.35, metalness:0.75});
+  materials.flange = new THREE.MeshStandardMaterial({color:0x555b62, roughness:0.5, metalness:0.6});
+  materials.plate = new THREE.MeshStandardMaterial({color:0x8a6a45, roughness:0.75});
+  materials.hinge = new THREE.MeshStandardMaterial({color:0xdadfe3, roughness:0.3, metalness:0.85});
+  materials.holeMarker = new THREE.MeshStandardMaterial({color:0x22262c, roughness:0.6});
+
+  gStand = new THREE.Group(); gEnclosure = new THREE.Group(); gInternal = new THREE.Group();
+  gDims = new THREE.Group(); gLabels = new THREE.Group();
+  scene.add(gStand, gEnclosure, gInternal, gDims, gLabels);
+
+  window.addEventListener('resize', onResize);
+  animate();
+}
+
+function getCss(varName){
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#ffffff';
+}
+
+function onResize(){
+  const wrap = document.getElementById('canvas-wrap');
+  camera.aspect = wrap.clientWidth/wrap.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  labelRenderer.setSize(wrap.clientWidth, wrap.clientHeight);
+}
+
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+}
+
+/* ---------- geometry helpers ---------- */
+function box(w,h,d,mat){
+  const g = new THREE.BoxGeometry(Math.max(w,0.001), Math.max(h,0.001), Math.max(d,0.001));
+  return new THREE.Mesh(g, mat);
+}
+function roundedRectShape(w,h,r){
+  r = Math.min(r, w/2-0.001, h/2-0.001); if (r<0) r=0;
+  const s = new THREE.Shape();
+  const x=-w/2, y=-h/2;
+  s.moveTo(x+r,y);
+  s.lineTo(x+w-r,y); s.quadraticCurveTo(x+w,y,x+w,y+r);
+  s.lineTo(x+w,y+h-r); s.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  s.lineTo(x+r,y+h); s.quadraticCurveTo(x,y+h,x,y+h-r);
+  s.lineTo(x,y+r); s.quadraticCurveTo(x,y,x+r,y);
+  return s;
+}
+function panelWithHoles(w,h,thickness,holes,mat){
+  const shape = new THREE.Shape();
+  shape.moveTo(-w/2,-h/2); shape.lineTo(w/2,-h/2); shape.lineTo(w/2,h/2); shape.lineTo(-w/2,h/2); shape.lineTo(-w/2,-h/2);
+  (holes||[]).forEach(hl=>{
+    const p = new THREE.Path();
+    p.absarc(hl.x, hl.y, Math.max(hl.r,0.01), 0, Math.PI*2, false);
+    shape.holes.push(p);
+  });
+  const geo = new THREE.ExtrudeGeometry(shape, {depth: Math.max(thickness,0.001), bevelEnabled:false, curveSegments:24});
+  geo.translate(0,0,-thickness/2);
+  return new THREE.Mesh(geo, mat);
+}
+function flapShape(w,h,r,thickness,mat){
+  const shape = roundedRectShape(w,h,r);
+  const geo = new THREE.ExtrudeGeometry(shape, {depth: Math.max(thickness,0.001), bevelEnabled:false, curveSegments:16});
+  geo.translate(0,0,-thickness/2);
+  geo.rotateX(-Math.PI/2); // lay flat: local Z(extrude/thickness) -> world Y
+  return new THREE.Mesh(geo, mat);
+}
+function openTopBox(w,h,d,thickness,mat){
+  // approximate open-top folded caddy as 5 thin panels (bottom + 4 sides)
+  const g = new THREE.Group();
+  const bottom = box(w,thickness,d,mat); bottom.position.y = thickness/2; g.add(bottom);
+  const front = box(w,h-thickness,thickness,mat); front.position.set(0,h/2+thickness/2,-d/2+thickness/2); g.add(front);
+  const back = box(w,h-thickness,thickness,mat); back.position.set(0,h/2+thickness/2,d/2-thickness/2); g.add(back);
+  const left = box(thickness,h-thickness,d-2*thickness,mat); left.position.set(-w/2+thickness/2,h/2+thickness/2,0); g.add(left);
+  const right = box(thickness,h-thickness,d-2*thickness,mat); right.position.set(w/2-thickness/2,h/2+thickness/2,0); g.add(right);
+  return g;
+}
+function holeMarker(r, depth){
+  const g = new THREE.CylinderGeometry(r, r, depth, 20);
+  g.rotateX(Math.PI/2);
+  return new THREE.Mesh(g, materials.holeMarker);
+}
+function makeLabel(text, cls){
+  const div = document.createElement('div');
+  div.className = 'lbl3d ' + (cls||'');
+  div.textContent = text;
+  return new THREE.CSS2DObject(div);
+}
+function clearGroup(g){ while(g.children.length) g.remove(g.children[0]); }
+
+/* =========================================================================
+   BUILD
+   ========================================================================= */
+function build(){
+  try{ build_(); }
+  catch(err){
+    console.error(err);
+    const hud = document.getElementById('hud');
+    if (hud) hud.innerHTML = '<b style="color:var(--dim)">Model build error — ' + (err && err.message || err) + '</b>';
+  }
+}
+function build_(){
+  clearGroup(gStand); clearGroup(gEnclosure); clearGroup(gInternal); clearGroup(gDims); clearGroup(gLabels);
+
+  const e = mapv(PARAMS.enclosure), it = mapv(PARAMS.internal), s = mapv(PARAMS.stand), v = PARAMS.view;
+  const d = derived();
+  const cut = v.cutaway;
+  const op = 1 - v.transparency; // panel opacity from transparency slider
+  [materials.hdpe, materials.hdpeDoor, materials.divider, materials.flap].forEach(m=> m.opacity = op);
+
+  const explode = v.explode; // 0..1
+
+  /* ---------------- STAND ---------------- */
+  const plateT = s.plate_thick, plateW = s.plate_width;
+  const plateHoles = [];
+  const bc = s.bolt_circle/2;
+  [[bc,bc],[-bc,bc],[bc,-bc],[-bc,-bc]].forEach(([hx,hz])=>{
+    plateHoles.push({x:hx, y:hz, r:s.plate_hole_dia/2});
+  });
+  const plate = panelWithHoles(plateW, plateW, plateT, plateHoles, materials.plate);
+  plate.rotation.x = -Math.PI/2;
+  plate.position.y = plateT/2;
+  gStand.add(plate);
+  gStand.add(makeLabel('3.3 Base Plate  ' + plateW.toFixed(1)+'×'+plateW.toFixed(1)+' cm', 'part'));
+  gStand.children[gStand.children.length-1].position.set(plateW/2, plateT, plateW/2);
+
+  const flangeY0 = plateT;
+  const flange = box(s.flange_dia, s.flange_height, s.flange_dia, materials.flange);
+  const fgeo = new THREE.CylinderGeometry(s.flange_dia/2, s.flange_dia/2, s.flange_height, 28);
+  flange.geometry.dispose(); flange.geometry = fgeo;
+  flange.position.y = flangeY0 + s.flange_height/2;
+  gStand.add(flange);
+  const flangeLbl = makeLabel('3.2 Base Flange — illustrative only ⚠', 'part');
+  flangeLbl.position.set(0, flangeY0+s.flange_height+1.5, 0);
+  gStand.add(flangeLbl);
+
+  const poleY0 = flangeY0 + s.flange_height;
+  const poleGeo = new THREE.CylinderGeometry(s.pole_od/2, s.pole_od/2, s.pole_length, 32, 1, false);
+  const pole = new THREE.Mesh(poleGeo, materials.pole);
+  pole.position.y = poleY0 + s.pole_length/2;
+  gStand.add(pole);
+  const poleTopY = poleY0 + s.pole_length;
+  const holeTop = holeMarker(s.pole_hole_dia/2, s.pole_od+0.3);
+  holeTop.position.set(0, poleTopY - s.pole_hole_top, 0);
+  const holeBtm = holeMarker(s.pole_hole_dia/2, s.pole_od+0.3);
+  holeBtm.position.set(0, poleY0 + s.pole_hole_btm, 0);
+  gStand.add(holeTop, holeBtm);
+  const holeTopLbl = makeLabel('Cable entry (from bin, ' + s.pole_hole_dia.toFixed(1) + ' cm Ø, ' + s.pole_hole_top.toFixed(1) + ' cm from top)', 'dim');
+  holeTopLbl.position.set(0, poleTopY - s.pole_hole_top, s.pole_od/2 + 0.6);
+  gStand.add(holeTopLbl);
+  const holeBtmLbl = makeLabel('Cable exit (' + s.pole_hole_dia.toFixed(1) + ' cm Ø, ' + s.pole_hole_btm.toFixed(1) + ' cm from bottom)', 'dim');
+  holeBtmLbl.position.set(0, poleY0 + s.pole_hole_btm, s.pole_od/2 + 0.6);
+  gStand.add(holeBtmLbl);
+  const poleLbl = makeLabel('3.1 Support Pole — Ø'+s.pole_od.toFixed(1)+' × '+s.pole_length.toFixed(0)+' cm', 'part');
+  poleLbl.position.set(0, poleY0 + s.pole_length/2, s.pole_od/2+1);
+  gStand.add(poleLbl);
+
+  // Monitor — NOT part of the fabrication sheet. User clarified: the bin sits
+  // separately on the ground; the pole carries a monitor instead, fed by a cable
+  // routed from the bin through the two pole grommet holes. Size/position below
+  // are illustrative placeholders only (flagged ⚠ in the sidebar).
+  const monY = poleTopY - s.monitor_offset;
+  const monitor = box(s.monitor_width, s.monitor_height, s.monitor_thick, materials.hinge);
+  monitor.position.set(0, monY, s.pole_od/2 + s.monitor_thick/2 - 0.05);
+  gStand.add(monitor);
+  const monLbl = makeLabel('Monitor (illustrative — not in fabrication sheet) ⚠', 'part');
+  monLbl.position.set(0, monY + s.monitor_height/2 + 1, s.pole_od/2 + s.monitor_thick);
+  gStand.add(monLbl);
+
+  /* stand components (plate/flange/pole/monitor) are all built centered on
+     x=0,z=0. The bin (enclosure) is a separate free-standing unit — see below. */
+
+  /* ---------------- ENCLOSURE (free-standing bin, not mounted on the pole) ---------------- */
+  const clearW = d.clear_width;
+  const baseBottomY = v.mount_on_stand ? poleTopY : 0;
+  const binOffsetX = v.mount_on_stand ? 0 : (plateW/2 + s.bin_gap + e.overall_width/2);
+  const baseT = e.wall_thickness;
+  const base = box(e.overall_width, baseT, e.overall_depth, materials.hdpe);
+  base.position.y = baseBottomY + baseT/2;
+  gEnclosure.add(base);
+  gEnclosure.add(mkPartLabel('1.1 Base Panel', e.overall_width/2, baseBottomY+baseT, e.overall_depth/2));
+
+  const wallY0 = baseBottomY + baseT;
+  const wallH = e.wall_height;
+  const expZ = explode * 6, expX = explode * 6, expY = explode*4;
+
+  if (!(cut)) {
+    const lw = box(e.wall_thickness, wallH, e.overall_depth, materials.hdpe);
+    lw.position.set(-(e.overall_width/2 - e.wall_thickness/2) - expX, wallY0+wallH/2, 0);
+    gEnclosure.add(lw);
+    gEnclosure.add(mkPartLabel('1.2 Left Wall', lw.position.x, wallY0+wallH, 0));
+  }
+  const rw = box(e.wall_thickness, wallH, e.overall_depth, materials.hdpe);
+  rw.position.set((e.overall_width/2 - e.wall_thickness/2) + (cut?0:expX), wallY0+wallH/2, 0);
+  rw.visible = !cut;
+  gEnclosure.add(rw);
+  if(!cut) gEnclosure.add(mkPartLabel('1.3 Right Wall', rw.position.x, wallY0+wallH, 0));
+
+  const bw = box(clearW, wallH, e.wall_thickness, materials.hdpe);
+  bw.position.set(0, wallY0+wallH/2, (e.overall_depth/2 - e.wall_thickness/2) + expZ);
+  gEnclosure.add(bw);
+  gEnclosure.add(mkPartLabel('1.4 Back Wall', 0, wallY0+wallH, bw.position.z));
+
+  // upper front panel with 2 holes
+  const holes = [
+    {x:-s_(e).hole_spacing/2, y:-(e.upper_front_h/2 - e.hole_offset_btm), r:e.hole_dia/2},
+    {x: s_(e).hole_spacing/2, y:-(e.upper_front_h/2 - e.hole_offset_btm), r:e.hole_dia/2},
+  ];
+  const ufp = panelWithHoles(clearW, e.upper_front_h, e.wall_thickness, holes, materials.hdpe);
+  const ufpZ = -(e.overall_depth/2 - e.wall_thickness/2) - (cut?4:expZ);
+  const ufpY = wallY0 + wallH - e.upper_front_h/2;
+  ufp.position.set(0, ufpY, ufpZ);
+  gEnclosure.add(ufp);
+  gEnclosure.add(mkPartLabel('1.5 Upper Front Panel', 0, wallY0+wallH, ufpZ));
+
+  // lid, hinged at rear
+  const lidPivot = new THREE.Object3D();
+  lidPivot.position.set(0, wallY0+wallH, e.overall_depth/2);
+  const lidMesh = box(e.overall_width, e.wall_thickness, e.overall_depth, materials.hdpe);
+  lidMesh.position.set(0, e.wall_thickness/2, -e.overall_depth/2);
+  lidPivot.add(lidMesh);
+  lidPivot.rotation.x = THREE.MathUtils.degToRad(v.lidOpenNeg ? 0 : -e.lid_open);
+  gEnclosure.add(lidPivot);
+  const lidLbl = mkPartLabel('1.6 Top Lid (hinged rear)', 0, wallY0+wallH+e.wall_thickness+expY, 0);
+  gEnclosure.add(lidLbl);
+
+  // door, hinged left
+  const doorPivot = new THREE.Object3D();
+  const doorZ = -(e.overall_depth/2 - e.wall_thickness/2) - (cut?4:expZ);
+  doorPivot.position.set(-e.door_width/2, wallY0 + e.door_height/2, doorZ);
+  const doorMesh = box(e.door_width, e.door_height, e.wall_thickness, materials.hdpeDoor);
+  doorMesh.position.set(e.door_width/2, 0, 0);
+  doorPivot.add(doorMesh);
+  doorPivot.rotation.y = THREE.MathUtils.degToRad(-e.door_open);
+  gEnclosure.add(doorPivot);
+  gEnclosure.add(mkPartLabel('1.7 Access Door (hinged left)', -e.door_width/2, wallY0+e.door_height, doorZ));
+
+  // internal divider
+  const divBackZ = (e.overall_depth/2 - e.wall_thickness) - e.divider_depth/2;
+  const divider = box(e.wall_thickness, e.divider_height, e.divider_depth, materials.divider);
+  divider.position.set(0, wallY0+e.divider_height/2, divBackZ);
+  divider.visible = !cut;
+  gEnclosure.add(divider);
+  if(!cut) gEnclosure.add(mkPartLabel('1.8 Internal Divider', 0, wallY0+e.divider_height, divBackZ));
+
+  // hinges (visual markers) — qty 2 lid (rear top edge), qty 2 door (left edge)
+  const hingeGeo = ()=> box(3.8,0.2,4.0, materials.hinge);
+  [ -e.overall_width*0.3, e.overall_width*0.3 ].forEach(hx=>{
+    const h = hingeGeo(); h.rotation.x = Math.PI/2;
+    h.position.set(hx, wallY0+wallH, e.overall_depth/2 - 0.1);
+    gEnclosure.add(h);
+  });
+  [ e.door_height*0.25, e.door_height*0.75 ].forEach(hy=>{
+    const h = hingeGeo(); h.scale.set(0.5,1,0.5);
+    h.position.set(-e.door_width - (cut?4:expZ*0+0), wallY0+hy, doorZ);
+    h.position.x = -e.door_width - 0.1;
+    gEnclosure.add(h);
+  });
+
+  gEnclosure.position.set(binOffsetX,0,0);
+
+  /* ---------------- INTERNAL PARTS ---------------- */
+  if (!cut){
+    const lowerZ = divBackZ;
+    const dryCaddy = openTopBox(it.caddy_width, it.caddy_height, it.caddy_depth, e.wall_thickness*0.5, materials.dryCaddy);
+    dryCaddy.position.set(-clearW/4, wallY0, lowerZ);
+    gInternal.add(dryCaddy);
+    gInternal.add(mkPartLabel('2.2 Dry Waste Caddy', -clearW/4, wallY0+it.caddy_height, lowerZ));
+
+    const wetCaddy = openTopBox(it.caddy_width, it.caddy_height, it.caddy_depth, e.wall_thickness*0.5, materials.wetCaddy);
+    wetCaddy.position.set(clearW/4, wallY0, lowerZ);
+    gInternal.add(wetCaddy);
+    gInternal.add(mkPartLabel('2.3 Wet Waste Caddy', clearW/4, wallY0+it.caddy_height, lowerZ));
+
+    const flap = flapShape(it.flap_width, it.flap_depth, it.flap_corner_r, it.flap_thick, materials.flap);
+    const flapPivot = new THREE.Object3D();
+    flapPivot.position.set(0, wallY0 + e.divider_height + 0.3, lowerZ);
+    flap.rotation.z = 0; // shape already laid flat by flapShape (rotateX applied to geometry)
+    flapPivot.add(flap);
+    flapPivot.rotation.z = THREE.MathUtils.degToRad(it.flap_tilt);
+    gInternal.add(flapPivot);
+    gInternal.add(mkPartLabel('2.1 Tilting Flap (±40°)', 0, wallY0+e.divider_height+1.5, lowerZ));
+  }
+
+  /* ---------------- DIMENSIONS (overall envelope) ---------------- */
+  // gDims is a sibling of gEnclosure/gStand, so these need WORLD coordinates —
+  // add binOffsetX to every bin-related point.
+  if (v.show_dims){
+    addDim([binOffsetX+e.overall_width/2, wallY0+wallH+e.wall_thickness+2+expY, -e.overall_depth/2-1],
+           [binOffsetX-e.overall_width/2, wallY0+wallH+e.wall_thickness+2+expY, -e.overall_depth/2-1],
+           e.overall_width.toFixed(1)+' cm W');
+    addDim([binOffsetX-e.overall_width/2-1, wallY0, -e.overall_depth/2],
+           [binOffsetX-e.overall_width/2-1, wallY0+wallH, -e.overall_depth/2],
+           wallH.toFixed(1)+' cm H (walls)');
+    addDim([binOffsetX-e.overall_width/2-1-(cut?0:expX), wallY0+wallH+e.wall_thickness+1, -e.overall_depth/2],
+           [binOffsetX-e.overall_width/2-1-(cut?0:expX), wallY0+wallH+e.wall_thickness+1, e.overall_depth/2],
+           e.overall_depth.toFixed(1)+' cm D');
+    addDim([-plateW/2-2, poleY0, -plateW/2-2],
+           [-plateW/2-2, poleTopY, -plateW/2-2],
+           s.pole_length.toFixed(0)+' cm pole');
+  }
+
+  /* ---------------- labels visibility ---------------- */
+  gLabelsAll().forEach(o=>{ o.element.style.display = v.show_labels ? '' : 'none'; });
+  gDims.children.forEach(o=>{ if(o.element) o.element.style.display = v.show_dims? '' : 'none'; });
+
+  updateHud(e, it, s, d, v);
+
+  function mkPartLabel(text, x,y,z){
+    const l = makeLabel(text, 'part'); l.position.set(x,y,z); return l;
+  }
+}
+function gLabelsAll(){
+  const arr=[];
+  [gEnclosure, gInternal, gStand].forEach(g=> g.traverse(o=>{ if(o.isCSS2DObject) arr.push(o); }));
+  return arr;
+}
+function addDim(a,b,text){
+  const mat = new THREE.LineBasicMaterial({color:new THREE.Color(getCss('--dim'))});
+  const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...a), new THREE.Vector3(...b)]);
+  const line = new THREE.Line(geo, mat);
+  gDims.add(line);
+  const mid = [(a[0]+b[0])/2, (a[1]+b[1])/2, (a[2]+b[2])/2];
+  const lbl = makeLabel(text, 'dim');
+  lbl.position.set(mid[0], mid[1], mid[2]);
+  gDims.add(lbl);
+}
+function mapv(section){
+  const out = {};
+  for (const k in section) out[k] = section[k].v;
+  return out;
+}
+function s_(e){ return e; } // helper alias (hole_spacing lives in same map)
+
+/* =========================================================================
+   HUD / readouts
+   ========================================================================= */
+function updateHud(e,it,s,d,v){
+  const hud = document.getElementById('hud');
+  hud.innerHTML =
+    '<b>Bin</b> ' + e.overall_width.toFixed(1)+' × '+e.overall_depth.toFixed(1)+' × '+(e.wall_height+e.wall_thickness).toFixed(1)+' cm (W×D×H incl. lid) — free-standing<br>'+
+    '<b>Clear front width</b> ' + d.clear_width.toFixed(2) + ' cm &nbsp; <b>Door clearance</b> ' + d.door_clearance_w.toFixed(2)+' / '+d.door_clearance_h.toFixed(2)+' cm (w/h)<br>'+
+    '<b>Pole</b> Ø'+s.pole_od.toFixed(1)+' × '+s.pole_length.toFixed(0)+' cm, wall '+s.pole_wall.toFixed(2)+' cm (inner Ø '+(2*d.pole_inner_r).toFixed(2)+') — carries the monitor<br>'+
+    '<span style="color:var(--warn)">⚠ items marked with a warning triangle are not dimensioned in the source document — values shown are illustrative placeholders.</span>';
+}
+
+/* =========================================================================
+   VIEWS
+   ========================================================================= */
+function frameTarget(){
+  const v = PARAMS.view;
+  const e = mapv(PARAMS.enclosure), s = mapv(PARAMS.stand);
+  if (v.mount_on_stand){
+    const totalH = s.plate_thick + s.flange_height + s.pole_length + e.wall_height + e.wall_thickness*2;
+    return { x:0, y: totalH/2, size: totalH };
+  }
+  // bin sits separately, offset along +X from the stand (both on the ground)
+  const standH = s.plate_thick + s.flange_height + s.pole_length;
+  const binH = e.wall_height + e.wall_thickness*2;
+  const maxH = Math.max(standH, binH);
+  const binOffsetX = s.plate_width/2 + s.bin_gap + e.overall_width/2;
+  const xSpan = binOffsetX + e.overall_width/2 + s.plate_width/2;
+  const size = Math.max(maxH, xSpan) * 1.05;
+  return { x: binOffsetX/2, y: maxH/2, size: size };
+}
+function setView(name){
+  const t = frameTarget();
+  controls.target.set(t.x, t.y, 0);
+  const dist = t.size*1.15 + 20;
+  if (name==='iso') camera.position.set(t.x+dist*0.62, t.y+t.size*0.45, dist*0.62);
+  if (name==='front') camera.position.set(t.x, t.y, dist*0.9);
+  if (name==='side') camera.position.set(t.x+dist*0.9, t.y, 0);
+  if (name==='top') camera.position.set(t.x, t.y+dist*0.95, 0.01);
+  camera.near = 0.5; camera.far = dist*6; camera.updateProjectionMatrix();
+  controls.update();
+  document.querySelectorAll('#view-btns .tbtn').forEach(b=>b.classList.toggle('active', b.dataset.view===name));
+}
+
+/* =========================================================================
+   SIDEBAR UI
+   ========================================================================= */
+const SECTIONS = [
+  {num:'1', title:'BIN ENCLOSURE — OUTER SHELL', key:'enclosure', intro:'5 mm HDPE sheet. Panels weld at static joints; lid and door ride on stainless hinges.'},
+  {num:'2', title:'INTERNAL MECHANICAL PARTS', key:'internal', intro:'Tilting flap directs waste into the dry / wet caddies below.'},
+  {num:'3', title:'STAND & BASE PLATE', key:'stand', intro:'Aluminium support pole on a cast flange, bolted to a plywood base plate.'},
+];
+
+function buildSidebar(){
+  const root = document.getElementById('sidebar');
+  root.innerHTML = '';
+
+  SECTIONS.forEach(sec=>{
+    const wrap = document.createElement('div'); wrap.className='section';
+    const head = document.createElement('div'); head.className='sec-head';
+    head.innerHTML = '<span class="num">'+sec.num+'</span><span>'+sec.title+'</span><span class="chev">▾</span>';
+    head.onclick = ()=> wrap.classList.toggle('collapsed');
+    const body = document.createElement('div'); body.className='sec-body';
+    const p = document.createElement('div'); p.className='info-p'; p.textContent = sec.intro;
+    body.appendChild(p);
+    for (const key in PARAMS[sec.key]){
+      body.appendChild(fieldEl(sec.key, key, PARAMS[sec.key][key]));
+    }
+    wrap.appendChild(head); wrap.appendChild(body); root.appendChild(wrap);
+  });
+
+  // view / display section
+  const vwrap = document.createElement('div'); vwrap.className='section';
+  vwrap.innerHTML = '<div class="sec-head"><span class="num">V</span><span>VIEW &amp; DISPLAY</span><span class="chev">▾</span>';
+  vwrap.firstChild.onclick = ()=> vwrap.classList.toggle('collapsed');
+  const vbody = document.createElement('div'); vbody.className='sec-body';
+  const layoutNote = document.createElement('div'); layoutNote.className='info-p';
+  layoutNote.innerHTML = 'The bin sits <b>separately</b> on the ground; the pole carries a monitor, fed by a cable through the two pole grommet holes. The checkbox below is only for comparing the alternate (stacked) layout — it is not the intended arrangement.';
+  vbody.appendChild(layoutNote);
+  vbody.appendChild(checkEl('Stack bin on top of pole instead (alt. layout)', 'mount_on_stand'));
+  vbody.appendChild(rangeEl('Transparency', 'transparency', PARAMS.view, 0,0.9,0.05, v=>Math.round(v*100)+'%'));
+  vbody.appendChild(rangeEl('Exploded offset', 'explode', PARAMS.view, 0,1,0.05, v=>Math.round(v*100)+'%'));
+  vwrap.appendChild(vbody);
+  root.appendChild(vwrap);
+
+  // assumptions section
+  const awrap = document.createElement('div'); awrap.className='section';
+  awrap.innerHTML = '<div class="sec-head"><span class="num">!</span><span>AMBIGUITIES &amp; ASSUMPTIONS</span><span class="chev">▾</span>';
+  awrap.firstChild.onclick = ()=> awrap.classList.toggle('collapsed');
+  const abody = document.createElement('div'); abody.className='sec-body';
+  abody.innerHTML =
+    '<div class="info-p">Everything below is <b style="color:var(--warn)">not dimensioned</b> in the fabrication sheet. Values are editable placeholders for visualisation only — do not fabricate to them.</div>'+
+    '<ul style="font-size:12px;color:var(--muted);line-height:1.7;margin:0;padding-left:18px;">'+
+    '<li>Layout: the bin is a free-standing unit, not mounted on the pole — the fabrication sheet gives no attachment between them. The stand carries a <b>monitor</b> instead, per your clarification; the monitor\'s size/mounting height are illustrative only (the sheet does not mention a monitor at all). The gap between bin and stand is likewise not specified — set it however suits the install.</li>'+
+    '<li>The pole\'s two grommet holes (§3.1, Ø15 mm, 5 cm from each end) are read as the cable entry/exit for wiring a connection from the bin through to the monitor — the sheet itself only calls them "cable entry" / "cable exit" without saying to what.</li>'+
+    '<li>Spacing between the two Ø16 mm holes on the upper front panel (only "centered horizontally" is stated).</li>'+
+    '<li>Base flange (Item 3.2) outer geometry — the sheet explicitly leaves this to the vendor to propose.</li>'+
+    '<li>Flange-to-base-plate bolt circle diameter (only "4× M8" and "matching bolt pattern" are stated).</li>'+
+    '<li>Divider (1.8) thickness — assumed equal to the 5 mm HDPE sheet stock used elsewhere in §1.</li>'+
+    '<li>Pole (3.1) is rendered as a solid cylinder for clarity; the spec calls for a tube of ≥2.5 mm wall — wall thickness is tracked as a parameter but not boolean-cut from the model.</li>'+
+    '<li>Grommet holes on the pole and hinge positions are shown as indicative markers, not boolean cutouts.</li>'+
+    '</ul>';
+  awrap.appendChild(abody);
+  root.appendChild(awrap);
+
+  // reference / hardware readout
+  const hwrap = document.createElement('div'); hwrap.className='section collapsed';
+  hwrap.innerHTML = '<div class="sec-head"><span class="num">4</span><span>HARDWARE (fixed qty, per sheet)</span><span class="chev">▾</span>';
+  hwrap.firstChild.onclick = ()=> hwrap.classList.toggle('collapsed');
+  const hbody = document.createElement('div'); hbody.className='sec-body readout';
+  hbody.innerHTML =
+    '4.1 &nbsp;<b>Butt hinges</b> 38×40×2 mm — <span class="r">qty 4</span> (2 lid + 2 door)<br>'+
+    '4.2 &nbsp;<b>Magnetic push-latch</b> + strike — <span class="r">qty 1</span>, inside right wall<br>'+
+    '4.3 &nbsp;<b>M8×45 bolts</b> + washers + nyloc — <span class="r">qty 4</span>, flange → base plate<br>'+
+    '4.4 &nbsp;<b>M3.5×10 screws</b> — <span class="r">qty 16</span>, hinge / latch mounting';
+  hwrap.appendChild(hbody);
+  root.appendChild(hwrap);
+}
+
+function fieldEl(sectionKey, key, def){
+  const el = document.createElement('div'); el.className='field' + (def.assumed?' assumed':'');
+  const label = document.createElement('label');
+  label.innerHTML = '<span class="fname">'+def.label+'</span><span class="fval" id="val-'+sectionKey+'-'+key+'">'+fmt(def.v)+'</span>';
+  const input = document.createElement('input');
+  input.type='range'; input.min=def.min; input.max=def.max; input.step=def.step; input.value=def.v;
+  input.id = 'in-'+sectionKey+'-'+key;
+  input.addEventListener('input', ()=>{
+    def.v = parseFloat(input.value);
+    document.getElementById('val-'+sectionKey+'-'+key).textContent = fmt(def.v);
+    build();
+  });
+  el.appendChild(label); el.appendChild(input);
+  const src = document.createElement('div'); src.className='note'; src.style.color = def.assumed ? 'var(--warn)' : 'var(--muted)';
+  src.textContent = def.src;
+  el.appendChild(src);
+  return el;
+}
+function rangeEl(labelText, key, obj, min,max,step, fmtFn){
+  const el = document.createElement('div'); el.className='field';
+  const label = document.createElement('label');
+  label.innerHTML = '<span class="fname">'+labelText+'</span><span class="fval" id="val-view-'+key+'">'+fmtFn(obj[key])+'</span>';
+  const input = document.createElement('input');
+  input.type='range'; input.min=min; input.max=max; input.step=step; input.value=obj[key];
+  input.addEventListener('input', ()=>{
+    obj[key] = parseFloat(input.value);
+    document.getElementById('val-view-'+key).textContent = fmtFn(obj[key]);
+    build();
+  });
+  el.appendChild(label); el.appendChild(input);
+  return el;
+}
+function checkEl(labelText, key){
+  const el = document.createElement('div'); el.className='checkline';
+  const cb = document.createElement('input'); cb.type='checkbox'; cb.checked = PARAMS.view[key];
+  cb.addEventListener('change', ()=>{ PARAMS.view[key] = cb.checked; build(); });
+  const lb = document.createElement('label'); lb.textContent = labelText;
+  el.appendChild(cb); el.appendChild(lb);
+  return el;
+}
+function fmt(n){
+  return (Math.round(n*100)/100).toString();
+}
+
+/* =========================================================================
+   TOP BAR actions
+   ========================================================================= */
+function wireTopbar(){
+  document.querySelectorAll('#view-btns .tbtn').forEach(b=> b.addEventListener('click', ()=> setView(b.dataset.view)));
+  const btnCut = document.getElementById('btn-cutaway');
+  btnCut.addEventListener('click', ()=>{ PARAMS.view.cutaway = !PARAMS.view.cutaway; btnCut.classList.toggle('active', PARAMS.view.cutaway); build(); });
+  const btnLbl = document.getElementById('btn-labels');
+  btnLbl.addEventListener('click', ()=>{ PARAMS.view.show_labels = !PARAMS.view.show_labels; btnLbl.classList.toggle('active', PARAMS.view.show_labels); build(); });
+  const btnDim = document.getElementById('btn-dims');
+  btnDim.classList.toggle('active', PARAMS.view.show_dims);
+  btnDim.addEventListener('click', ()=>{ PARAMS.view.show_dims = !PARAMS.view.show_dims; btnDim.classList.toggle('active', PARAMS.view.show_dims); build(); });
+
+  document.getElementById('btn-export-json').addEventListener('click', exportJSON);
+  document.getElementById('btn-export-scad').addEventListener('click', exportSCAD);
+}
+
+function collectParams(){
+  const out = {};
+  ['enclosure','internal','stand'].forEach(sec=>{
+    out[sec] = {};
+    for (const k in PARAMS[sec]) out[sec][k] = PARAMS[sec][k].v;
+  });
+  out.view = Object.assign({}, PARAMS.view);
+  out.derived = derived();
+  out._meta = { source: 'Fabrication Order Sheet — Enclosure & Stand, Vendor Issue 07', units: 'centimetres unless noted', generated: new Date().toISOString() };
+  return out;
+}
+
+let _downloadsCap = null;
+async function getDownloads(){
+  if (_downloadsCap) return _downloadsCap;
+  if (!window.claude || !window.claude.use) return null;
+  try { _downloadsCap = await window.claude.use('downloads'); } catch(e){ _downloadsCap = null; }
+  return _downloadsCap;
+}
+async function downloadText(filename, text){
+  const downloads = await getDownloads();
+  if (!downloads){
+    setHudMsg('Downloads are unavailable in this view — copy the export from the browser console: console.log of ' + filename);
+    console.log('--- ' + filename + ' ---\n' + text);
+    return;
+  }
+  try{
+    const res = await downloads.save({filename, data: new Blob([text], {type:'text/plain'})});
+    setHudMsg((res.status==='saved'?'Saved ':'Sent ') + filename);
+  }catch(err){
+    if (err && err.code === 'declined') return;
+    setHudMsg('Could not save ' + filename + ' (' + (err && err.code || 'error') + ')');
+  }
+}
+function setHudMsg(msg){
+  const hud = document.getElementById('hud');
+  const note = document.createElement('div');
+  note.style.color = 'var(--accent)'; note.style.marginTop='4px';
+  note.textContent = msg;
+  hud.appendChild(note);
+  setTimeout(()=>{ if(note.parentNode) note.parentNode.removeChild(note); }, 4000);
+}
+function exportJSON(){
+  downloadText('enclosure_params.json', JSON.stringify(collectParams(), null, 2));
+}
+function exportSCAD(){
+  const e = mapv(PARAMS.enclosure), it = mapv(PARAMS.internal), s = mapv(PARAMS.stand);
+  const d = derived();
+  const scad = `// ============================================================
+// Parametric model — HDPE Bin Enclosure & Aluminium Stand
+// Generated from: Fabrication Order Sheet, Vendor Issue 07
+// Units: millimetres (converted from the source cm spec)
+// Edit the parameters below; geometry regenerates automatically.
+// Values flagged ASSUMED are not dimensioned in the source document.
+// ============================================================
+
+// ---------- §1 Enclosure ----------
+overall_width      = ${mm(e.overall_width)};   // Base Panel / Lid width
+overall_depth       = ${mm(e.overall_depth)};   // Base Panel / Lid depth
+wall_height         = ${mm(e.wall_height)};     // Items 1.2 / 1.3
+wall_thickness      = ${mm(e.wall_thickness)};  // 5 mm HDPE sheet
+upper_front_height  = ${mm(e.upper_front_h)};   // Item 1.5
+hole_dia            = ${mm(e.hole_dia)};        // 2x holes in upper front panel
+hole_offset_bottom  = ${mm(e.hole_offset_btm)};
+hole_spacing        = ${mm(e.hole_spacing)};    // ASSUMED — not given in source
+door_width          = ${mm(e.door_width)};      // Item 1.7
+door_height         = ${mm(e.door_height)};
+divider_depth       = ${mm(e.divider_depth)};   // Item 1.8
+divider_height      = ${mm(e.divider_height)};
+clear_width         = ${mm(d.clear_width)};     // derived: overall_width - 2*wall_thickness
+
+// ---------- §2 Internal parts ----------
+flap_width   = ${mm(it.flap_width)};
+flap_depth   = ${mm(it.flap_depth)};
+flap_thick   = ${mm(it.flap_thick)};
+flap_corner_r= ${mm(it.flap_corner_r)};
+caddy_width  = ${mm(it.caddy_width)};
+caddy_depth  = ${mm(it.caddy_depth)};
+caddy_height = ${mm(it.caddy_height)};
+caddy_lip    = ${mm(it.caddy_lip)};
+
+// ---------- §3 Stand & base ----------
+pole_od       = ${mm(s.pole_od)};
+pole_wall     = ${mm(s.pole_wall)};
+pole_length   = ${mm(s.pole_length)};
+plate_width   = ${mm(s.plate_width)};
+plate_thick   = ${mm(s.plate_thick)};
+plate_hole_dia= ${mm(s.plate_hole_dia)};
+bolt_circle   = ${mm(s.bolt_circle)};   // ASSUMED — flange bolt circle not dimensioned
+flange_dia    = ${mm(s.flange_dia)};    // ASSUMED — vendor to propose actual flange
+flange_height = ${mm(s.flange_height)}; // ASSUMED
+
+// ============================================================
+// GEOMETRY
+// ============================================================
+module base_panel(){ cube([overall_width, overall_depth, wall_thickness]); }
+
+module side_wall(){ cube([wall_thickness, overall_depth, wall_height]); }
+
+module back_wall(){ cube([clear_width, wall_thickness, wall_height]); }
+
+module upper_front_panel(){
+  difference(){
+    cube([clear_width, wall_thickness, upper_front_height]);
+    translate([clear_width/2 - hole_spacing/2, 0, hole_offset_bottom])
+      rotate([-90,0,0]) cylinder(h=wall_thickness*3, d=hole_dia, center=true, $fn=32);
+    translate([clear_width/2 + hole_spacing/2, 0, hole_offset_bottom])
+      rotate([-90,0,0]) cylinder(h=wall_thickness*3, d=hole_dia, center=true, $fn=32);
+  }
+}
+
+module lid(){ cube([overall_width, overall_depth, wall_thickness]); }
+
+module access_door(){ cube([door_width, wall_thickness, door_height]); }
+
+module internal_divider(){ cube([wall_thickness, divider_depth, divider_height]); }
+
+module caddy(w=caddy_width, dd=caddy_depth, h=caddy_height, t=wall_thickness/2){
+  difference(){
+    cube([w, dd, h]);
+    translate([t, t, t]) cube([w-2*t, dd-2*t, h]); // open top, 5-sided shell
+  }
+}
+
+module tilting_flap(){
+  linear_extrude(height=flap_thick)
+    offset(r=flap_corner_r) offset(r=-flap_corner_r)
+      square([flap_width, flap_depth], center=true);
+}
+
+module support_pole(){
+  difference(){
+    cylinder(h=pole_length, d=pole_od, center=false, $fn=64);
+    translate([0,0,-1]) cylinder(h=pole_length+2, d=pole_od-2*pole_wall, center=false, $fn=64);
+  }
+}
+
+module base_plate(){
+  difference(){
+    cube([plate_width, plate_width, plate_thick]);
+    for (p = [[bolt_circle/2,bolt_circle/2],[-bolt_circle/2,bolt_circle/2],[bolt_circle/2,-bolt_circle/2],[-bolt_circle/2,-bolt_circle/2]])
+      translate([plate_width/2+p[0], plate_width/2+p[1], -1])
+        cylinder(h=plate_thick+2, d=plate_hole_dia, $fn=24);
+  }
+}
+
+module base_flange(){ // ASSUMED geometry — vendor to propose actual part
+  cylinder(h=flange_height, d=flange_dia, $fn=48);
+}
+
+// ---------------- Assembly ----------------
+module stand_assembly(){
+  base_plate();
+  translate([plate_width/2, plate_width/2, plate_thick]) base_flange();
+  translate([plate_width/2, plate_width/2, plate_thick+flange_height]) support_pole();
+}
+
+module enclosure_assembly(z0=0){
+  translate([0,0,z0]) base_panel();
+  translate([0,0,z0+wall_thickness]){
+    translate([0,0,0]) side_wall(); // left
+    translate([overall_width-wall_thickness,0,0]) side_wall(); // right
+    translate([wall_thickness,overall_depth-wall_thickness,0]) back_wall();
+    translate([wall_thickness,0,wall_height-upper_front_height]) upper_front_panel();
+    translate([wall_thickness,0,0]) access_door();
+    translate([wall_thickness+ (clear_width-divider_depth)/2, wall_thickness, 0]) rotate([0,0,90]) internal_divider();
+  }
+  translate([0,0,z0+wall_thickness+wall_height]) lid();
+}
+
+stand_assembly();
+translate([0,0, plate_thick+flange_height+pole_length]) enclosure_assembly();
+translate([plate_width+caddy_width*4, 0, 0]) { color("peru") caddy(); }
+translate([plate_width+caddy_width*4, caddy_depth*1.3, 0]) { color("steelblue") caddy(); }
+translate([plate_width+caddy_width*4, caddy_depth*2.6, 0]) { color("lightgray") tilting_flap(); }
+
+// NOTE: this file is a faithful, editable OpenSCAD translation of the same
+// PARAMS driving the on-screen 3D view — change a value at the top and the
+// whole assembly (and every dependent offset) recomputes automatically,
+// exactly as in the interactive model.
+`;
+  downloadText('enclosure_parametric_model.scad', scad);
+}
+function mm(cm){ return (Math.round(cm*10*1000)/1000); }
+
+/* =========================================================================
+   BOOT
+   ========================================================================= */
+function boot(){
+  document.getElementById('loading').remove();
+  initScene();
+  buildSidebar();
+  wireTopbar();
+  build();
+  setView('iso');
+}
+if (window.THREE && THREE.OrbitControls && THREE.CSS2DRenderer) boot();
+else window.addEventListener('load', boot);
+
+})();
+</script>
