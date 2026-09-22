@@ -160,6 +160,30 @@
     border-left:3px solid var(--accent); padding-left:8px; border-radius:4px; transition:all .2s ease;
   }
 
+  /* Visibility manager */
+  .vis-section{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:8px;
+    padding:10px 12px; margin-bottom:12px;
+  }
+  .vis-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .vis-title{font-family:var(--mono); font-size:10.5px; font-weight:700; color:var(--muted); letter-spacing:.03em;}
+  .vis-btn-link{background:none; border:none; font-size:11px; color:var(--accent); cursor:pointer; font-weight:600; padding:2px 4px;}
+  .vis-btn-link:hover{text-decoration:underline;}
+  .vis-quick-presets{display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap;}
+  .vis-preset-btn{
+    font-family:var(--sans); font-size:11px; background:var(--panel); border:1px solid var(--line);
+    border-radius:5px; padding:4px 8px; color:var(--ink); cursor:pointer;
+  }
+  .vis-preset-btn:hover{border-color:var(--accent);}
+  .vis-chips{display:flex; flex-wrap:wrap; gap:5px;}
+  .vis-chip{
+    display:inline-flex; align-items:center; gap:4px; font-size:11px; font-family:var(--sans);
+    background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:3px 7px;
+    cursor:pointer; user-select:none; transition:all .15s;
+  }
+  .vis-chip:hover{border-color:var(--accent);}
+  .vis-chip.hidden{opacity:0.55; background:var(--panel-2); text-decoration:line-through; border-style:dashed;}
+
   #hud{
     margin-bottom:12px; font-family:var(--mono); font-size:11.5px;
     color:var(--muted); background:var(--panel-2); border:1px solid var(--line);
@@ -232,50 +256,50 @@
    ========================================================================= */
 const PARAMS = {
   enclosure: {
-    overall_width:   { v: 20.0, min: 14, max: 30, step: 0.1, label: "Overall width (Base Panel / Lid)", src: "§1 · Overall Assembled Size" },
-    overall_depth:   { v: 18.0, min: 12, max: 26, step: 0.1, label: "Overall depth (Base Panel / Lid)", src: "§1 · Overall Assembled Size" },
-    wall_height:     { v: 30.5, min: 18, max: 45, step: 0.1, label: "Side wall height (Items 1.2 / 1.3)", src: "§1.2 / 1.3" },
-    wall_thickness:  { v: 0.5,  min: 0.2, max: 1.0, step: 0.05, label: "HDPE sheet thickness", src: "§1 · Material: 5 mm HDPE" },
-    upper_front_h:   { v: 17.5, min: 8, max: 24, step: 0.1, label: "Upper front panel height (1.5)", src: "§1.5" },
-    hole_dia:        { v: 1.6,  min: 0.5, max: 3, step: 0.1, label: "Front panel hole Ø (2×)", src: "§1.5 · 2× Ø16 mm" },
-    hole_offset_btm: { v: 3.0,  min: 0.5, max: 8, step: 0.1, label: "Hole height from panel bottom", src: "§1.5" },
-    hole_spacing:    { v: 8.0,  min: 2, max: 16, step: 0.1, label: "Hole-to-hole spacing", src: "assumed — spec gives \"centered horizontally\", no spacing value", assumed:true },
-    door_width:      { v: 18.8, min: 10, max: 22, step: 0.1, label: "Access door width (1.7)", src: "§1.7" },
-    door_height:     { v: 12.8, min: 6, max: 20, step: 0.1, label: "Access door height (1.7)", src: "§1.7" },
-    door_open:       { v: 0,    min: 0, max: 110, step: 1, label: "Door open angle", src: "hinged on left edge (1.7)" },
-    lid_open:        { v: 0,    min: 0, max: 100, step: 1, label: "Lid open angle", src: "hinged at rear (1.6)" },
-    divider_depth:   { v: 16.0, min: 6, max: 17.5, step: 0.1, label: "Internal divider depth (1.8)", src: "§1.8" },
-    divider_height:  { v: 13.0, min: 4, max: 20, step: 0.1, label: "Internal divider height (1.8)", src: "§1.8" },
+    overall_width:   { v: 20.0, min: 5,   max: 100, step: 0.1, label: "Overall width (Base Panel / Lid)", src: "§1 · Overall Assembled Size" },
+    overall_depth:   { v: 18.0, min: 5,   max: 100, step: 0.1, label: "Overall depth (Base Panel / Lid)", src: "§1 · Overall Assembled Size" },
+    wall_height:     { v: 30.5, min: 10,  max: 150, step: 0.1, label: "Side wall height (Items 1.2 / 1.3)", src: "§1.2 / 1.3" },
+    wall_thickness:  { v: 0.5,  min: 0.1, max: 3.0, step: 0.05, label: "HDPE sheet thickness", src: "§1 · Material: 5 mm HDPE" },
+    upper_front_h:   { v: 17.5, min: 2,   max: 80,  step: 0.1, label: "Upper front panel height (1.5)", src: "§1.5" },
+    hole_dia:        { v: 1.6,  min: 0.2, max: 12,  step: 0.1, label: "Front panel hole Ø (2×)", src: "§1.5 · 2× Ø16 mm" },
+    hole_offset_btm: { v: 3.0,  min: 0.2, max: 30,  step: 0.1, label: "Hole height from panel bottom", src: "§1.5" },
+    hole_spacing:    { v: 8.0,  min: 1,   max: 50,  step: 0.1, label: "Hole-to-hole spacing", src: "assumed — spec gives \"centered horizontally\", no spacing value", assumed:true },
+    door_width:      { v: 18.8, min: 2,   max: 80,  step: 0.1, label: "Access door width (1.7)", src: "§1.7" },
+    door_height:     { v: 12.8, min: 2,   max: 80,  step: 0.1, label: "Access door height (1.7)", src: "§1.7" },
+    door_open:       { v: 0,    min: 0,   max: 180, step: 1,   label: "Door open angle", src: "hinged on left edge (1.7)" },
+    lid_open:        { v: 0,    min: 0,   max: 180, step: 1,   label: "Lid open angle", src: "hinged at rear (1.6)" },
+    divider_depth:   { v: 16.0, min: 2,   max: 80,  step: 0.1, label: "Internal divider depth (1.8)", src: "§1.8" },
+    divider_height:  { v: 13.0, min: 2,   max: 80,  step: 0.1, label: "Internal divider height (1.8)", src: "§1.8" },
   },
   internal: {
-    flap_width:    { v: 14.0, min: 6, max: 19, step: 0.1, label: "Tilting flap width (2.1)", src: "§2.1" },
-    flap_depth:    { v: 12.0, min: 4, max: 17, step: 0.1, label: "Tilting flap depth (2.1)", src: "§2.1" },
-    flap_thick:    { v: 0.3,  min: 0.2, max: 0.5, step: 0.05, label: "Flap thickness (3 mm)", src: "§2.1" },
-    flap_corner_r: { v: 0.5,  min: 0, max: 1.5, step: 0.05, label: "Flap corner radius", src: "§2.1 · 5 mm rounded" },
-    flap_tilt:     { v: 0,    min: -40, max: 40, step: 1, label: "Flap tilt angle (±40° spec)", src: "§2.1" },
-    caddy_width:   { v: 7.0,  min: 3, max: 9,  step: 0.1, label: "Caddy width (2.2 / 2.3)", src: "§2.2 / 2.3" },
-    caddy_depth:   { v: 15.0, min: 6, max: 17.5, step: 0.1, label: "Caddy depth", src: "§2.2 / 2.3" },
-    caddy_height:  { v: 12.5, min: 5, max: 20, step: 0.1, label: "Caddy height", src: "§2.2 / 2.3" },
-    caddy_lip:     { v: 1.0,  min: 0, max: 2.5, step: 0.1, label: "Front pull-out lip (10 mm)", src: "§2.2 / 2.3" },
+    flap_width:    { v: 14.0, min: 2,    max: 60,  step: 0.1, label: "Tilting flap width (2.1)", src: "§2.1" },
+    flap_depth:    { v: 12.0, min: 2,    max: 60,  step: 0.1, label: "Tilting flap depth (2.1)", src: "§2.1" },
+    flap_thick:    { v: 0.3,  min: 0.05, max: 2.5, step: 0.05, label: "Flap thickness (3 mm)", src: "§2.1" },
+    flap_corner_r: { v: 0.5,  min: 0,    max: 5.0, step: 0.05, label: "Flap corner radius", src: "§2.1 · 5 mm rounded" },
+    flap_tilt:     { v: 0,    min: -90,  max: 90,  step: 1,   label: "Flap tilt angle (±40° spec)", src: "§2.1" },
+    caddy_width:   { v: 7.0,  min: 1,    max: 40,  step: 0.1, label: "Caddy width (2.2 / 2.3)", src: "§2.2 / 2.3" },
+    caddy_depth:   { v: 15.0, min: 2,    max: 60,  step: 0.1, label: "Caddy depth", src: "§2.2 / 2.3" },
+    caddy_height:  { v: 12.5, min: 2,    max: 60,  step: 0.1, label: "Caddy height", src: "§2.2 / 2.3" },
+    caddy_lip:     { v: 1.0,  min: 0,    max: 10,  step: 0.1, label: "Front pull-out lip (10 mm)", src: "§2.2 / 2.3" },
   },
   stand: {
-    pole_od:        { v: 5.0,  min: 2, max: 9, step: 0.1, label: "Support pole OD (50 mm)", src: "§3.1" },
-    pole_wall:      { v: 0.25, min: 0.1, max: 0.6, step: 0.05, label: "Pole wall thickness (min 2.5 mm)", src: "§3.1" },
-    pole_length:    { v: 125.0,min: 60, max: 180, step: 1, label: "Pole length (1250 mm)", src: "§3.1" },
-    pole_hole_dia:  { v: 1.5,  min: 0.5, max: 3, step: 0.1, label: "Grommet hole Ø (2×, 15 mm)", src: "§3.1" },
-    pole_hole_top:  { v: 5.0,  min: 1, max: 20, step: 0.1, label: "Grommet hole — from top", src: "§3.1" },
-    pole_hole_btm:  { v: 5.0,  min: 1, max: 20, step: 0.1, label: "Grommet hole — from bottom", src: "§3.1" },
-    plate_width:    { v: 40.0, min: 20, max: 60, step: 0.5, label: "Base plate width × depth (40×40)", src: "§3.3" },
-    plate_thick:    { v: 1.9,  min: 0.6, max: 4, step: 0.1, label: "Base plate thickness (19 mm ply)", src: "§3.3" },
-    plate_hole_dia: { v: 0.9,  min: 0.3, max: 2, step: 0.1, label: "Base plate bolt hole Ø (4×, 9 mm)", src: "§3.3" },
-    bolt_circle:    { v: 12.0, min: 4, max: 30, step: 0.5, label: "Flange bolt-pattern spacing", src: "assumed — flange bolt circle not dimensioned in doc", assumed:true },
-    flange_dia:     { v: 10.0, min: 5, max: 20, step: 0.5, label: "Base flange Ø (illustrative)", src: "assumed — \"vendor must propose\" flange, no size given", assumed:true },
-    flange_height:  { v: 3.0,  min: 1, max: 8, step: 0.2, label: "Base flange height (illustrative)", src: "assumed — as above", assumed:true },
-    monitor_width:  { v: 25.0, min: 10, max: 45, step: 0.5, label: "Monitor width (illustrative)", src: "not in fabrication sheet — user clarified a monitor mounts on the pole", assumed:true },
-    monitor_height: { v: 16.0, min: 8,  max: 30, step: 0.5, label: "Monitor height (illustrative)", src: "not in fabrication sheet", assumed:true },
-    monitor_thick:  { v: 2.5,  min: 1,  max: 6,  step: 0.5, label: "Monitor thickness (illustrative)", src: "not in fabrication sheet", assumed:true },
-    monitor_offset: { v: 8.0,  min: 0,  max: 40, step: 0.5, label: "Monitor position — below pole top", src: "not in fabrication sheet", assumed:true },
-    bin_gap:        { v: 25.0, min: 5,  max: 80, step: 1, label: "Gap between bin and stand (bin sits separately)", src: "not in fabrication sheet — bin is a free-standing unit, per user clarification", assumed:true },
+    pole_od:        { v: 5.0,  min: 1,   max: 30,  step: 0.1, label: "Support pole OD (50 mm)", src: "§3.1" },
+    pole_wall:      { v: 0.25, min: 0.05,max: 2.5, step: 0.05, label: "Pole wall thickness (min 2.5 mm)", src: "§3.1" },
+    pole_length:    { v: 125.0,min: 15,  max: 350, step: 1,   label: "Pole length (1250 mm)", src: "§3.1" },
+    pole_hole_dia:  { v: 1.5,  min: 0.2, max: 15,  step: 0.1, label: "Grommet hole Ø (2×, 15 mm)", src: "§3.1" },
+    pole_hole_top:  { v: 5.0,  min: 0.5, max: 60,  step: 0.1, label: "Grommet hole — from top", src: "§3.1" },
+    pole_hole_btm:  { v: 5.0,  min: 0.5, max: 60,  step: 0.1, label: "Grommet hole — from bottom", src: "§3.1" },
+    plate_width:    { v: 40.0, min: 10,  max: 180, step: 0.5, label: "Base plate width × depth (40×40)", src: "§3.3" },
+    plate_thick:    { v: 1.9,  min: 0.2, max: 10,  step: 0.1, label: "Base plate thickness (19 mm ply)", src: "§3.3" },
+    plate_hole_dia: { v: 0.9,  min: 0.1, max: 8,   step: 0.1, label: "Base plate bolt hole Ø (4×, 9 mm)", src: "§3.3" },
+    bolt_circle:    { v: 12.0, min: 1,   max: 100, step: 0.5, label: "Flange bolt-pattern spacing", src: "assumed — flange bolt circle not dimensioned in doc", assumed:true },
+    flange_dia:     { v: 10.0, min: 2,   max: 80,  step: 0.5, label: "Base flange Ø (illustrative)", src: "assumed — \"vendor must propose\" flange, no size given", assumed:true },
+    flange_height:  { v: 3.0,  min: 0.5, max: 30,  step: 0.2, label: "Base flange height (illustrative)", src: "assumed — as above", assumed:true },
+    monitor_width:  { v: 25.0, min: 5,   max: 120, step: 0.5, label: "Monitor width (illustrative)", src: "not in fabrication sheet — user clarified a monitor mounts on the pole", assumed:true },
+    monitor_height: { v: 16.0, min: 4,   max: 100, step: 0.5, label: "Monitor height (illustrative)", src: "not in fabrication sheet", assumed:true },
+    monitor_thick:  { v: 2.5,  min: 0.5, max: 25,  step: 0.5, label: "Monitor thickness (illustrative)", src: "not in fabrication sheet", assumed:true },
+    monitor_offset: { v: 8.0,  min: 0,   max: 120, step: 0.5, label: "Monitor position — below pole top", src: "not in fabrication sheet", assumed:true },
+    bin_gap:        { v: 25.0, min: 0,   max: 250, step: 1,   label: "Gap between bin and stand (bin sits separately)", src: "not in fabrication sheet — bin is a free-standing unit, per user clarification", assumed:true },
   },
   view: {
     mount_on_stand: false,
@@ -383,6 +407,7 @@ let selectedComponentId = null;
 let componentMeshMap = {};
 let selectionBox = null;
 let selectionDimLabel = null;
+const hiddenComponents = new Set();
 
 /* =========================================================================
    THREE.JS SCENE
@@ -457,9 +482,10 @@ function initScene(){
     const intersects = raycaster.intersectObjects([gEnclosure, gInternal, gStand], true);
     let hitComp = false;
     for (let i = 0; i < intersects.length; i++) {
+      if (!isMeshVisible(intersects[i].object)) continue;
       let curr = intersects[i].object;
       while (curr && !curr.userData.componentId && curr !== scene) curr = curr.parent;
-      if (curr && curr.userData.componentId) { hitComp = true; break; }
+      if (curr && curr.userData.componentId && !hiddenComponents.has(curr.userData.componentId)) { hitComp = true; break; }
     }
     wrap.style.cursor = hitComp ? 'pointer' : 'grab';
   });
@@ -828,6 +854,7 @@ function build_(){
   gLabelsAll().forEach(o=>{ o.element.style.display = v.show_labels ? '' : 'none'; });
   gDims.children.forEach(o=>{ if(o.element) o.element.style.display = v.show_dims? '' : 'none'; });
 
+  applyVisibility();
   updateSelection3D();
   updateHud(e, it, s, d, v);
 
@@ -923,6 +950,84 @@ function setFocus(focusName){
 /* =========================================================================
    COMPONENT SELECTION & INSPECTOR
    ========================================================================= */
+function isMeshVisible(obj) {
+  let curr = obj;
+  while (curr && curr !== scene) {
+    if (curr.visible === false) return false;
+    curr = curr.parent;
+  }
+  return true;
+}
+
+function applyVisibility(){
+  for (const cid in componentMeshMap){
+    const mesh = componentMeshMap[cid];
+    if (mesh){
+      mesh.visible = !hiddenComponents.has(cid);
+    }
+  }
+}
+
+function toggleComponentVisibility(id){
+  if (hiddenComponents.has(id)){
+    hiddenComponents.delete(id);
+  } else {
+    hiddenComponents.add(id);
+  }
+  applyVisibility();
+  updateSelection3D();
+  renderInspector();
+  renderVisibilityList();
+}
+
+function showAllComponents(){
+  hiddenComponents.clear();
+  applyVisibility();
+  updateSelection3D();
+  renderInspector();
+  renderVisibilityList();
+}
+
+function hideShell(){
+  ['top_lid', 'access_door', 'upper_front_panel', 'left_wall', 'right_wall', 'back_wall'].forEach(id => hiddenComponents.add(id));
+  applyVisibility();
+  updateSelection3D();
+  renderInspector();
+  renderVisibilityList();
+}
+
+function hideDoorAndLid(){
+  ['top_lid', 'access_door'].forEach(id => hiddenComponents.add(id));
+  applyVisibility();
+  updateSelection3D();
+  renderInspector();
+  renderVisibilityList();
+}
+
+function renderVisibilityList(){
+  const container = document.getElementById('vis-chips-container');
+  if (!container) return;
+  container.innerHTML = '';
+  for (const cid in COMPONENTS){
+    const comp = COMPONENTS[cid];
+    const isHidden = hiddenComponents.has(cid);
+    const chip = document.createElement('div');
+    chip.className = 'vis-chip' + (isHidden ? ' hidden' : '');
+    chip.title = isHidden ? 'Click to show' : 'Click to hide';
+    chip.innerHTML = (isHidden ? '🚫 ' : '👁 ') + comp.name;
+    chip.onclick = (e) => {
+      e.stopPropagation();
+      toggleComponentVisibility(cid);
+    };
+    container.appendChild(chip);
+  }
+  const showAllBtn = document.getElementById('btn-show-all');
+  if (showAllBtn){
+    showAllBtn.style.display = hiddenComponents.size > 0 ? '' : 'none';
+    showAllBtn.textContent = `Show All (${hiddenComponents.size} hidden)`;
+  }
+}
+
 function selectComponent(id){
   selectedComponentId = id;
   updateSelection3D();
@@ -936,7 +1041,7 @@ function updateSelection3D(){
 
   if (!selectedComponentId || !componentMeshMap[selectedComponentId]) return;
   const mesh = componentMeshMap[selectedComponentId];
-  if (!mesh.visible) return;
+  if (!mesh.visible || hiddenComponents.has(selectedComponentId)) return;
 
   selectionBox = new THREE.BoxHelper(mesh, 0x2b5fd9);
   selectionBox.material.depthTest = false;
@@ -1013,6 +1118,15 @@ function renderInspector(){
     }
   });
 
+  const isHidden = hiddenComponents.has(selectedComponentId);
+  const visBtn = document.createElement('button');
+  visBtn.className = 'tbtn' + (isHidden ? ' primary' : '');
+  visBtn.style.width = '100%';
+  visBtn.style.marginTop = '8px';
+  visBtn.innerHTML = isHidden ? '👁 Show This Component' : '🚫 Hide This Component';
+  visBtn.onclick = () => toggleComponentVisibility(selectedComponentId);
+  controlsBox.appendChild(visBtn);
+
   const sel = document.createElement('select');
   sel.className = 'inspector-select';
   sel.innerHTML = '<option value="">-- Switch component --</option>';
@@ -1056,11 +1170,12 @@ function handlePartClick(event){
   const intersects = raycaster.intersectObjects([gEnclosure, gInternal, gStand], true);
 
   for (let i = 0; i < intersects.length; i++){
+    if (!isMeshVisible(intersects[i].object)) continue;
     let curr = intersects[i].object;
     while (curr && !curr.userData.componentId && curr !== scene){
       curr = curr.parent;
     }
-    if (curr && curr.userData.componentId){
+    if (curr && curr.userData.componentId && !hiddenComponents.has(curr.userData.componentId)){
       selectComponent(curr.userData.componentId);
       return;
     }
@@ -1084,6 +1199,25 @@ function buildSidebar(){
   const inspContainer = document.createElement('div');
   inspContainer.id = 'inspector-container';
   root.appendChild(inspContainer);
+
+  const visCard = document.createElement('div');
+  visCard.className = 'vis-section';
+  visCard.innerHTML = `
+    <div class="vis-header">
+      <span class="vis-title">👁 COMPONENT VISIBILITY</span>
+      <button id="btn-show-all" class="vis-btn-link" style="display:none;">Show All</button>
+    </div>
+    <div class="vis-quick-presets">
+      <button class="vis-preset-btn" id="btn-hide-shell">Hide Shell (Expose Inside)</button>
+      <button class="vis-preset-btn" id="btn-hide-door">Hide Door &amp; Lid</button>
+    </div>
+    <div class="vis-chips" id="vis-chips-container"></div>
+  `;
+  root.appendChild(visCard);
+
+  visCard.querySelector('#btn-show-all').onclick = showAllComponents;
+  visCard.querySelector('#btn-hide-shell').onclick = hideShell;
+  visCard.querySelector('#btn-hide-door').onclick = hideDoorAndLid;
 
   const hudBox = document.createElement('div');
   hudBox.id = 'hud';
@@ -1151,6 +1285,7 @@ function buildSidebar(){
   root.appendChild(hwrap);
 
   renderInspector();
+  renderVisibilityList();
 }
 
 function fieldEl(sectionKey, key, def, isInspector){
