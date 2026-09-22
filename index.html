@@ -111,12 +111,54 @@
 
   /* dimension / component labels in 3D */
   .lbl3d{
-    font-family:var(--mono); font-size:11px; color:var(--ink); background:var(--panel);
+    font-family:var(--mono); font-size:10.5px; color:var(--ink); background:var(--panel);
     border:1px solid var(--line); border-radius:4px; padding:2px 6px; white-space:nowrap;
     pointer-events:none; box-shadow:0 1px 3px rgba(0,0,0,.15);
   }
   .lbl3d.dim{color:var(--dim); border-color:var(--dim); font-weight:600;}
   .lbl3d.part{color:var(--accent); border-color:var(--accent);}
+  .lbl3d.dim-selected{
+    font-family:var(--mono); font-size:11.5px; font-weight:600; color:#ffffff;
+    background:var(--accent); border:1px solid rgba(255,255,255,0.4); border-radius:6px;
+    padding:3px 9px; white-space:nowrap; pointer-events:none; box-shadow:0 4px 14px rgba(43,95,217,0.35);
+  }
+
+  /* Inspector card in sidebar */
+  .inspector-card{
+    background:var(--panel); border:2px solid var(--accent); border-radius:9px;
+    padding:12px; margin-bottom:12px; box-shadow:0 4px 14px rgba(43,95,217,0.12);
+  }
+  .inspector-card.empty{
+    border:1px dashed var(--line); background:var(--panel-2); box-shadow:none; padding:10px 12px;
+  }
+  .inspector-top{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;
+  }
+  .inspector-badge{
+    font-family:var(--mono); font-size:10.5px; font-weight:700; color:var(--accent); letter-spacing:.04em;
+  }
+  .inspector-tag{
+    font-family:var(--mono); font-size:10px; background:var(--panel-2); border:1px solid var(--line);
+    padding:1px 6px; border-radius:4px; color:var(--muted);
+  }
+  .inspector-close{
+    background:none; border:none; font-size:15px; color:var(--muted); cursor:pointer; line-height:1;
+    padding:2px 5px; border-radius:4px;
+  }
+  .inspector-close:hover{color:var(--ink); background:var(--panel-2);}
+  .inspector-title{font-size:13.5px; font-weight:700; color:var(--ink); margin-bottom:3px;}
+  .inspector-desc{font-size:11px; color:var(--muted); margin-bottom:8px; line-height:1.45;}
+  .inspector-controls{
+    display:flex; flex-direction:column; gap:8px; border-top:1px solid var(--line); padding-top:8px;
+  }
+  .inspector-select{
+    width:100%; font-family:var(--sans); font-size:12px; color:var(--ink); background:var(--panel);
+    border:1px solid var(--line); border-radius:6px; padding:6px 8px; cursor:pointer; margin-top:6px;
+  }
+  .field.field-selected-glow{
+    background:color-mix(in srgb, var(--accent) 12%, transparent);
+    border-left:3px solid var(--accent); padding-left:8px; border-radius:4px; transition:all .2s ease;
+  }
 
   #hud{
     margin-bottom:12px; font-family:var(--mono); font-size:11.5px;
@@ -238,7 +280,7 @@ const PARAMS = {
   view: {
     mount_on_stand: false,
     show_labels: false,
-    show_dims: true,
+    show_dims: false,
     cutaway: false,
     transparency: 0.55,
     explode: 0,
@@ -255,6 +297,92 @@ function derived(){
   const pole_inner_r = Math.max(0.01, s.pole_od.v/2 - s.pole_wall.v);
   return { clear_width, lower_opening_h, door_clearance_w, door_clearance_h, pole_inner_r };
 }
+
+/* =========================================================================
+   COMPONENTS REGISTRY & STATE
+   ========================================================================= */
+const COMPONENTS = {
+  base_panel: {
+    name: 'Base Panel', sec: 'enclosure', tag: '§1.1',
+    desc: '5 mm HDPE bottom panel (supports the internal divider and walls).',
+    keys: ['overall_width', 'overall_depth', 'wall_thickness']
+  },
+  left_wall: {
+    name: 'Left Wall', sec: 'enclosure', tag: '§1.2',
+    desc: 'Welded 5 mm HDPE left side panel.',
+    keys: ['wall_height', 'overall_depth', 'wall_thickness']
+  },
+  right_wall: {
+    name: 'Right Wall', sec: 'enclosure', tag: '§1.3',
+    desc: 'Welded 5 mm HDPE right side panel with magnetic latch strike.',
+    keys: ['wall_height', 'overall_depth', 'wall_thickness']
+  },
+  back_wall: {
+    name: 'Back Wall', sec: 'enclosure', tag: '§1.4',
+    desc: 'Welded 5 mm HDPE rear enclosure wall.',
+    keys: ['wall_height', 'overall_width', 'wall_thickness']
+  },
+  upper_front_panel: {
+    name: 'Upper Front Panel', sec: 'enclosure', tag: '§1.5',
+    desc: 'Fixed welded upper front panel with 2× Ø16 mm holes for sensors/hardware.',
+    keys: ['upper_front_h', 'hole_dia', 'hole_offset_btm', 'hole_spacing', 'wall_thickness']
+  },
+  top_lid: {
+    name: 'Top Lid', sec: 'enclosure', tag: '§1.6',
+    desc: 'Top lid on stainless butt hinges along the rear edge.',
+    keys: ['overall_width', 'overall_depth', 'lid_open', 'wall_thickness']
+  },
+  access_door: {
+    name: 'Access Door', sec: 'enclosure', tag: '§1.7',
+    desc: 'Front access door on left-edge butt hinges.',
+    keys: ['door_width', 'door_height', 'door_open', 'wall_thickness']
+  },
+  internal_divider: {
+    name: 'Internal Divider', sec: 'enclosure', tag: '§1.8',
+    desc: 'Internal partition separating wet and dry waste compartments.',
+    keys: ['divider_depth', 'divider_height', 'wall_thickness']
+  },
+  tilting_flap: {
+    name: 'Tilting Flap', sec: 'internal', tag: '§2.1',
+    desc: 'Bi-directional tilting flap (±40°) routing waste to caddies.',
+    keys: ['flap_width', 'flap_depth', 'flap_tilt', 'flap_thick', 'flap_corner_r']
+  },
+  dry_caddy: {
+    name: 'Dry Waste Caddy', sec: 'internal', tag: '§2.2',
+    desc: 'Removable pull-out container for dry recyclables.',
+    keys: ['caddy_width', 'caddy_height', 'caddy_depth', 'caddy_lip']
+  },
+  wet_caddy: {
+    name: 'Wet Waste Caddy', sec: 'internal', tag: '§2.3',
+    desc: 'Removable pull-out container for wet/organic waste.',
+    keys: ['caddy_width', 'caddy_height', 'caddy_depth', 'caddy_lip']
+  },
+  pole: {
+    name: 'Support Pole', sec: 'stand', tag: '§3.1',
+    desc: 'Aluminium tube pole with upper and lower cable grommet holes.',
+    keys: ['pole_od', 'pole_length', 'pole_wall', 'pole_hole_dia', 'pole_hole_top', 'pole_hole_btm']
+  },
+  base_flange: {
+    name: 'Base Flange', sec: 'stand', tag: '§3.2',
+    desc: 'Flange connecting support pole to base plate with 4× M8 bolts.',
+    keys: ['flange_dia', 'flange_height', 'bolt_circle']
+  },
+  base_plate: {
+    name: 'Base Plate', sec: 'stand', tag: '§3.3',
+    desc: '19 mm plywood ground mounting plate (400×400 mm).',
+    keys: ['plate_width', 'plate_thick', 'plate_hole_dia', 'bolt_circle']
+  },
+  monitor: {
+    name: 'Pole Monitor', sec: 'stand', tag: 'Illustrative',
+    desc: 'Display mounted on the pole, wired through the grommet holes.',
+    keys: ['monitor_width', 'monitor_height', 'monitor_thick', 'monitor_offset']
+  }
+};
+
+let selectedComponentId = null;
+let componentMeshMap = {};
+let selectionBox = null;
+let selectionDimLabel = null;
 
 /* =========================================================================
    THREE.JS SCENE
@@ -296,6 +424,45 @@ function initScene(){
   controls.minDistance = 2;
   controls.maxDistance = 1000;
   controls.maxPolarAngle = Math.PI;
+
+  let pointerDownPos = null;
+  let pointerDownTime = 0;
+
+  wrap.addEventListener('pointerdown', (e) => {
+    pointerDownPos = { x: e.clientX, y: e.clientY };
+    pointerDownTime = Date.now();
+  });
+
+  wrap.addEventListener('pointerup', (e) => {
+    if (!pointerDownPos) return;
+    const dx = e.clientX - pointerDownPos.x;
+    const dy = e.clientY - pointerDownPos.y;
+    const dt = Date.now() - pointerDownTime;
+    pointerDownPos = null;
+    if (Math.hypot(dx, dy) > 5 || dt > 400) return; // Dragged: orbit instead of selection
+    handlePartClick(e);
+  });
+
+  wrap.addEventListener('pointermove', (e) => {
+    if (pointerDownPos && Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y) > 3) {
+      return;
+    }
+    const rect = wrap.getBoundingClientRect();
+    const mouse = new THREE.Vector2(
+      ((e.clientX - rect.left) / wrap.clientWidth) * 2 - 1,
+      -((event.clientY - rect.top) / wrap.clientHeight) * 2 + 1
+    );
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects([gEnclosure, gInternal, gStand], true);
+    let hitComp = false;
+    for (let i = 0; i < intersects.length; i++) {
+      let curr = intersects[i].object;
+      while (curr && !curr.userData.componentId && curr !== scene) curr = curr.parent;
+      if (curr && curr.userData.componentId) { hitComp = true; break; }
+    }
+    wrap.style.cursor = hitComp ? 'pointer' : 'grab';
+  });
 
   wrap.addEventListener('dblclick', (event) => {
     const rect = wrap.getBoundingClientRect();
@@ -362,6 +529,7 @@ function onResize(){
 function animate(){
   requestAnimationFrame(animate);
   controls.update();
+  if (selectionBox) selectionBox.update();
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
 }
@@ -437,6 +605,7 @@ function build(){
 }
 function build_(){
   clearGroup(gStand); clearGroup(gEnclosure); clearGroup(gInternal); clearGroup(gDims); clearGroup(gLabels);
+  componentMeshMap = {};
 
   const e = mapv(PARAMS.enclosure), it = mapv(PARAMS.internal), s = mapv(PARAMS.stand), v = PARAMS.view;
   const d = derived();
@@ -456,8 +625,10 @@ function build_(){
   const plate = panelWithHoles(plateW, plateW, plateT, plateHoles, materials.plate);
   plate.rotation.x = -Math.PI/2;
   plate.position.y = plateT/2;
+  plate.userData = { componentId: 'base_plate' };
+  componentMeshMap['base_plate'] = plate;
   gStand.add(plate);
-  gStand.add(makeLabel('3.3 Base Plate  ' + plateW.toFixed(1)+'×'+plateW.toFixed(1)+' cm', 'part'));
+  gStand.add(makeLabel('3.3 Base Plate', 'part'));
   gStand.children[gStand.children.length-1].position.set(plateW/2, plateT, plateW/2);
 
   const flangeY0 = plateT;
@@ -465,8 +636,10 @@ function build_(){
   const fgeo = new THREE.CylinderGeometry(s.flange_dia/2, s.flange_dia/2, s.flange_height, 28);
   flange.geometry.dispose(); flange.geometry = fgeo;
   flange.position.y = flangeY0 + s.flange_height/2;
+  flange.userData = { componentId: 'base_flange' };
+  componentMeshMap['base_flange'] = flange;
   gStand.add(flange);
-  const flangeLbl = makeLabel('3.2 Base Flange — illustrative only ⚠', 'part');
+  const flangeLbl = makeLabel('3.2 Base Flange ⚠', 'part');
   flangeLbl.position.set(0, flangeY0+s.flange_height+1.5, 0);
   gStand.add(flangeLbl);
 
@@ -474,6 +647,8 @@ function build_(){
   const poleGeo = new THREE.CylinderGeometry(s.pole_od/2, s.pole_od/2, s.pole_length, 32, 1, false);
   const pole = new THREE.Mesh(poleGeo, materials.pole);
   pole.position.y = poleY0 + s.pole_length/2;
+  pole.userData = { componentId: 'pole' };
+  componentMeshMap['pole'] = pole;
   gStand.add(pole);
   const poleTopY = poleY0 + s.pole_length;
   const holeTop = holeMarker(s.pole_hole_dia/2, s.pole_od+0.3);
@@ -481,38 +656,30 @@ function build_(){
   const holeBtm = holeMarker(s.pole_hole_dia/2, s.pole_od+0.3);
   holeBtm.position.set(0, poleY0 + s.pole_hole_btm, 0);
   gStand.add(holeTop, holeBtm);
-  const holeTopLbl = makeLabel('Cable entry (from bin, ' + s.pole_hole_dia.toFixed(1) + ' cm Ø, ' + s.pole_hole_top.toFixed(1) + ' cm from top)', 'dim');
-  holeTopLbl.position.set(0, poleTopY - s.pole_hole_top, s.pole_od/2 + 0.6);
-  gStand.add(holeTopLbl);
-  const holeBtmLbl = makeLabel('Cable exit (' + s.pole_hole_dia.toFixed(1) + ' cm Ø, ' + s.pole_hole_btm.toFixed(1) + ' cm from bottom)', 'dim');
-  holeBtmLbl.position.set(0, poleY0 + s.pole_hole_btm, s.pole_od/2 + 0.6);
-  gStand.add(holeBtmLbl);
-  const poleLbl = makeLabel('3.1 Support Pole — Ø'+s.pole_od.toFixed(1)+' × '+s.pole_length.toFixed(0)+' cm', 'part');
+  const poleLbl = makeLabel('3.1 Support Pole', 'part');
   poleLbl.position.set(0, poleY0 + s.pole_length/2, s.pole_od/2+1);
   gStand.add(poleLbl);
 
-  // Monitor — NOT part of the fabrication sheet. User clarified: the bin sits
-  // separately on the ground; the pole carries a monitor instead, fed by a cable
-  // routed from the bin through the two pole grommet holes. Size/position below
-  // are illustrative placeholders only (flagged ⚠ in the sidebar).
+  // Monitor
   const monY = poleTopY - s.monitor_offset;
   const monitor = box(s.monitor_width, s.monitor_height, s.monitor_thick, materials.hinge);
   monitor.position.set(0, monY, s.pole_od/2 + s.monitor_thick/2 - 0.05);
+  monitor.userData = { componentId: 'monitor' };
+  componentMeshMap['monitor'] = monitor;
   gStand.add(monitor);
-  const monLbl = makeLabel('Monitor (illustrative — not in fabrication sheet) ⚠', 'part');
+  const monLbl = makeLabel('Monitor (illustrative) ⚠', 'part');
   monLbl.position.set(0, monY + s.monitor_height/2 + 1, s.pole_od/2 + s.monitor_thick);
   gStand.add(monLbl);
 
-  /* stand components (plate/flange/pole/monitor) are all built centered on
-     x=0,z=0. The bin (enclosure) is a separate free-standing unit — see below. */
-
-  /* ---------------- ENCLOSURE (free-standing bin, not mounted on the pole) ---------------- */
+  /* ---------------- ENCLOSURE ---------------- */
   const clearW = d.clear_width;
   const baseBottomY = v.mount_on_stand ? poleTopY : 0;
   const binOffsetX = v.mount_on_stand ? 0 : (plateW/2 + s.bin_gap + e.overall_width/2);
   const baseT = e.wall_thickness;
   const base = box(e.overall_width, baseT, e.overall_depth, materials.hdpe);
   base.position.y = baseBottomY + baseT/2;
+  base.userData = { componentId: 'base_panel' };
+  componentMeshMap['base_panel'] = base;
   gEnclosure.add(base);
   gEnclosure.add(mkPartLabel('1.1 Base Panel', e.overall_width/2, baseBottomY+baseT, e.overall_depth/2));
 
@@ -523,17 +690,23 @@ function build_(){
   if (!(cut)) {
     const lw = box(e.wall_thickness, wallH, e.overall_depth, materials.hdpe);
     lw.position.set(-(e.overall_width/2 - e.wall_thickness/2) - expX, wallY0+wallH/2, 0);
+    lw.userData = { componentId: 'left_wall' };
+    componentMeshMap['left_wall'] = lw;
     gEnclosure.add(lw);
     gEnclosure.add(mkPartLabel('1.2 Left Wall', lw.position.x, wallY0+wallH, 0));
   }
   const rw = box(e.wall_thickness, wallH, e.overall_depth, materials.hdpe);
   rw.position.set((e.overall_width/2 - e.wall_thickness/2) + (cut?0:expX), wallY0+wallH/2, 0);
   rw.visible = !cut;
+  rw.userData = { componentId: 'right_wall' };
+  componentMeshMap['right_wall'] = rw;
   gEnclosure.add(rw);
   if(!cut) gEnclosure.add(mkPartLabel('1.3 Right Wall', rw.position.x, wallY0+wallH, 0));
 
   const bw = box(clearW, wallH, e.wall_thickness, materials.hdpe);
   bw.position.set(0, wallY0+wallH/2, (e.overall_depth/2 - e.wall_thickness/2) + expZ);
+  bw.userData = { componentId: 'back_wall' };
+  componentMeshMap['back_wall'] = bw;
   gEnclosure.add(bw);
   gEnclosure.add(mkPartLabel('1.4 Back Wall', 0, wallY0+wallH, bw.position.z));
 
@@ -546,6 +719,8 @@ function build_(){
   const ufpZ = -(e.overall_depth/2 - e.wall_thickness/2) - (cut?4:expZ);
   const ufpY = wallY0 + wallH - e.upper_front_h/2;
   ufp.position.set(0, ufpY, ufpZ);
+  ufp.userData = { componentId: 'upper_front_panel' };
+  componentMeshMap['upper_front_panel'] = ufp;
   gEnclosure.add(ufp);
   gEnclosure.add(mkPartLabel('1.5 Upper Front Panel', 0, wallY0+wallH, ufpZ));
 
@@ -554,10 +729,12 @@ function build_(){
   lidPivot.position.set(0, wallY0+wallH, e.overall_depth/2);
   const lidMesh = box(e.overall_width, e.wall_thickness, e.overall_depth, materials.hdpe);
   lidMesh.position.set(0, e.wall_thickness/2, -e.overall_depth/2);
+  lidMesh.userData = { componentId: 'top_lid' };
+  componentMeshMap['top_lid'] = lidMesh;
   lidPivot.add(lidMesh);
   lidPivot.rotation.x = THREE.MathUtils.degToRad(v.lidOpenNeg ? 0 : -e.lid_open);
   gEnclosure.add(lidPivot);
-  const lidLbl = mkPartLabel('1.6 Top Lid (hinged rear)', 0, wallY0+wallH+e.wall_thickness+expY, 0);
+  const lidLbl = mkPartLabel('1.6 Top Lid', 0, wallY0+wallH+e.wall_thickness+expY, 0);
   gEnclosure.add(lidLbl);
 
   // door, hinged left
@@ -566,20 +743,24 @@ function build_(){
   doorPivot.position.set(-e.door_width/2, wallY0 + e.door_height/2, doorZ);
   const doorMesh = box(e.door_width, e.door_height, e.wall_thickness, materials.hdpeDoor);
   doorMesh.position.set(e.door_width/2, 0, 0);
+  doorMesh.userData = { componentId: 'access_door' };
+  componentMeshMap['access_door'] = doorMesh;
   doorPivot.add(doorMesh);
   doorPivot.rotation.y = THREE.MathUtils.degToRad(-e.door_open);
   gEnclosure.add(doorPivot);
-  gEnclosure.add(mkPartLabel('1.7 Access Door (hinged left)', -e.door_width/2, wallY0+e.door_height, doorZ));
+  gEnclosure.add(mkPartLabel('1.7 Access Door', -e.door_width/2, wallY0+e.door_height, doorZ));
 
   // internal divider
   const divBackZ = (e.overall_depth/2 - e.wall_thickness) - e.divider_depth/2;
   const divider = box(e.wall_thickness, e.divider_height, e.divider_depth, materials.divider);
   divider.position.set(0, wallY0+e.divider_height/2, divBackZ);
   divider.visible = !cut;
+  divider.userData = { componentId: 'internal_divider' };
+  componentMeshMap['internal_divider'] = divider;
   gEnclosure.add(divider);
   if(!cut) gEnclosure.add(mkPartLabel('1.8 Internal Divider', 0, wallY0+e.divider_height, divBackZ));
 
-  // hinges (visual markers) — qty 2 lid (rear top edge), qty 2 door (left edge)
+  // hinges
   const hingeGeo = ()=> box(3.8,0.2,4.0, materials.hinge);
   [ -e.overall_width*0.3, e.overall_width*0.3 ].forEach(hx=>{
     const h = hingeGeo(); h.rotation.x = Math.PI/2;
@@ -601,46 +782,53 @@ function build_(){
     const lowerZ = divBackZ;
     const dryCaddy = openTopBox(it.caddy_width, it.caddy_height, it.caddy_depth, e.wall_thickness*0.5, materials.dryCaddy);
     dryCaddy.position.set(-clearW/4, wallY0, lowerZ);
+    dryCaddy.userData = { componentId: 'dry_caddy' };
+    dryCaddy.traverse(m => { m.userData = { componentId: 'dry_caddy' }; });
+    componentMeshMap['dry_caddy'] = dryCaddy;
     gInternal.add(dryCaddy);
-    gInternal.add(mkPartLabel('2.2 Dry Waste Caddy', -clearW/4, wallY0+it.caddy_height, lowerZ));
+    gInternal.add(mkPartLabel('2.2 Dry Caddy', -clearW/4, wallY0+it.caddy_height, lowerZ));
 
     const wetCaddy = openTopBox(it.caddy_width, it.caddy_height, it.caddy_depth, e.wall_thickness*0.5, materials.wetCaddy);
     wetCaddy.position.set(clearW/4, wallY0, lowerZ);
+    wetCaddy.userData = { componentId: 'wet_caddy' };
+    wetCaddy.traverse(m => { m.userData = { componentId: 'wet_caddy' }; });
+    componentMeshMap['wet_caddy'] = wetCaddy;
     gInternal.add(wetCaddy);
-    gInternal.add(mkPartLabel('2.3 Wet Waste Caddy', clearW/4, wallY0+it.caddy_height, lowerZ));
+    gInternal.add(mkPartLabel('2.3 Wet Caddy', clearW/4, wallY0+it.caddy_height, lowerZ));
 
     const flap = flapShape(it.flap_width, it.flap_depth, it.flap_corner_r, it.flap_thick, materials.flap);
+    flap.userData = { componentId: 'tilting_flap' };
+    componentMeshMap['tilting_flap'] = flap;
     const flapPivot = new THREE.Object3D();
     flapPivot.position.set(0, wallY0 + e.divider_height + 0.3, lowerZ);
-    flap.rotation.z = 0; // shape already laid flat by flapShape (rotateX applied to geometry)
+    flap.rotation.z = 0;
     flapPivot.add(flap);
     flapPivot.rotation.z = THREE.MathUtils.degToRad(it.flap_tilt);
     gInternal.add(flapPivot);
-    gInternal.add(mkPartLabel('2.1 Tilting Flap (±40°)', 0, wallY0+e.divider_height+1.5, lowerZ));
+    gInternal.add(mkPartLabel('2.1 Tilting Flap', 0, wallY0+e.divider_height+1.5, lowerZ));
   }
 
   /* ---------------- DIMENSIONS (overall envelope) ---------------- */
-  // gDims is a sibling of gEnclosure/gStand, so these need WORLD coordinates —
-  // add binOffsetX to every bin-related point.
   if (v.show_dims){
-    addDim([binOffsetX+e.overall_width/2, wallY0+wallH+e.wall_thickness+2+expY, -e.overall_depth/2-1],
-           [binOffsetX-e.overall_width/2, wallY0+wallH+e.wall_thickness+2+expY, -e.overall_depth/2-1],
-           e.overall_width.toFixed(1)+' cm W');
+    addDim([binOffsetX+e.overall_width/2, wallY0+wallH+e.wall_thickness+1+expY, -e.overall_depth/2-1],
+           [binOffsetX-e.overall_width/2, wallY0+wallH+e.wall_thickness+1+expY, -e.overall_depth/2-1],
+           e.overall_width.toFixed(1)+' cm');
     addDim([binOffsetX-e.overall_width/2-1, wallY0, -e.overall_depth/2],
            [binOffsetX-e.overall_width/2-1, wallY0+wallH, -e.overall_depth/2],
-           wallH.toFixed(1)+' cm H (walls)');
+           wallH.toFixed(1)+' cm');
     addDim([binOffsetX-e.overall_width/2-1-(cut?0:expX), wallY0+wallH+e.wall_thickness+1, -e.overall_depth/2],
            [binOffsetX-e.overall_width/2-1-(cut?0:expX), wallY0+wallH+e.wall_thickness+1, e.overall_depth/2],
-           e.overall_depth.toFixed(1)+' cm D');
+           e.overall_depth.toFixed(1)+' cm');
     addDim([-plateW/2-2, poleY0, -plateW/2-2],
            [-plateW/2-2, poleTopY, -plateW/2-2],
-           s.pole_length.toFixed(0)+' cm pole');
+           s.pole_length.toFixed(0)+' cm');
   }
 
   /* ---------------- labels visibility ---------------- */
   gLabelsAll().forEach(o=>{ o.element.style.display = v.show_labels ? '' : 'none'; });
   gDims.children.forEach(o=>{ if(o.element) o.element.style.display = v.show_dims? '' : 'none'; });
 
+  updateSelection3D();
   updateHud(e, it, s, d, v);
 
   function mkPartLabel(text, x,y,z){
@@ -740,16 +928,177 @@ const SECTIONS = [
   {num:'3', title:'STAND & BASE PLATE', key:'stand', intro:'Aluminium support pole on a cast flange, bolted to a plywood base plate.'},
 ];
 
+/* =========================================================================
+   COMPONENT SELECTION & INSPECTOR
+   ========================================================================= */
+function selectComponent(id){
+  selectedComponentId = id;
+  updateSelection3D();
+  renderInspector();
+  highlightSidebarFields();
+}
+
+function updateSelection3D(){
+  if (selectionBox) { scene.remove(selectionBox); selectionBox = null; }
+  if (selectionDimLabel) { scene.remove(selectionDimLabel); selectionDimLabel = null; }
+
+  if (!selectedComponentId || !componentMeshMap[selectedComponentId]) return;
+  const mesh = componentMeshMap[selectedComponentId];
+  if (!mesh.visible) return;
+
+  selectionBox = new THREE.BoxHelper(mesh, 0x2b5fd9);
+  selectionBox.material.depthTest = false;
+  selectionBox.material.transparent = true;
+  selectionBox.material.opacity = 0.95;
+  scene.add(selectionBox);
+
+  // Single clean dimension badge above selected component
+  const bbox = new THREE.Box3().setFromObject(mesh);
+  const size = new THREE.Vector3(); bbox.getSize(size);
+  const center = new THREE.Vector3(); bbox.getCenter(center);
+  const comp = COMPONENTS[selectedComponentId];
+  if (comp) {
+    const text = `${comp.tag} ${comp.name}: ${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)} cm`;
+    selectionDimLabel = makeLabel(text, 'dim-selected');
+    selectionDimLabel.position.set(center.x, bbox.max.y + 1.2, center.z);
+    scene.add(selectionDimLabel);
+  }
+}
+
+function renderInspector(){
+  const container = document.getElementById('inspector-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (!selectedComponentId || !COMPONENTS[selectedComponentId]){
+    const card = document.createElement('div');
+    card.className = 'inspector-card empty';
+    card.innerHTML = `
+      <div class="inspector-top">
+        <span class="inspector-badge">🎯 Component Inspector</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">
+        Click any 3D component to inspect and change its dimensions:
+      </div>
+    `;
+    const sel = document.createElement('select');
+    sel.className = 'inspector-select';
+    sel.innerHTML = '<option value="">-- Or choose a component --</option>';
+    for (const cid in COMPONENTS){
+      sel.innerHTML += `<option value="${cid}">${COMPONENTS[cid].tag} ${COMPONENTS[cid].name}</option>`;
+    }
+    sel.addEventListener('change', () => {
+      if (sel.value) selectComponent(sel.value);
+    });
+    card.appendChild(sel);
+    container.appendChild(card);
+    return;
+  }
+
+  const comp = COMPONENTS[selectedComponentId];
+  const card = document.createElement('div');
+  card.className = 'inspector-card';
+
+  card.innerHTML = `
+    <div class="inspector-top">
+      <span class="inspector-badge">🎯 SELECTED COMPONENT</span>
+      <span class="inspector-tag">${comp.tag}</span>
+      <button class="inspector-close" title="Clear selection">✕</button>
+    </div>
+    <div class="inspector-title">${comp.name}</div>
+    <div class="inspector-desc">${comp.desc}</div>
+    <div class="inspector-controls" id="inspector-controls"></div>
+  `;
+
+  card.querySelector('.inspector-close').onclick = () => selectComponent(null);
+
+  const controlsBox = card.querySelector('#inspector-controls');
+  comp.keys.forEach(key => {
+    const sec = comp.sec;
+    const def = PARAMS[sec][key];
+    if (def){
+      controlsBox.appendChild(fieldEl(sec, key, def, true));
+    }
+  });
+
+  const sel = document.createElement('select');
+  sel.className = 'inspector-select';
+  sel.innerHTML = '<option value="">-- Switch component --</option>';
+  for (const cid in COMPONENTS){
+    const selectedAttr = cid === selectedComponentId ? ' selected' : '';
+    sel.innerHTML += `<option value="${cid}"${selectedAttr}>${COMPONENTS[cid].tag} ${COMPONENTS[cid].name}</option>`;
+  }
+  sel.addEventListener('change', () => {
+    if (sel.value) selectComponent(sel.value);
+  });
+  card.appendChild(sel);
+
+  container.appendChild(card);
+}
+
+function highlightSidebarFields(){
+  document.querySelectorAll('.field').forEach(f => f.classList.remove('field-selected-glow'));
+  if (!selectedComponentId || !COMPONENTS[selectedComponentId]) return;
+
+  const comp = COMPONENTS[selectedComponentId];
+  const secEl = document.querySelector(`.section[data-sec="${comp.sec}"]`);
+  if (secEl && secEl.classList.contains('collapsed')){
+    secEl.classList.remove('collapsed');
+  }
+
+  comp.keys.forEach(key => {
+    const fieldNode = document.getElementById(`field-${comp.sec}-${key}`);
+    if (fieldNode) fieldNode.classList.add('field-selected-glow');
+  });
+}
+
+function handlePartClick(event){
+  const wrap = document.getElementById('canvas-wrap');
+  const rect = wrap.getBoundingClientRect();
+  const mouse = new THREE.Vector2(
+    ((event.clientX - rect.left) / wrap.clientWidth) * 2 - 1,
+    -((event.clientY - rect.top) / wrap.clientHeight) * 2 + 1
+  );
+  const raycaster = new THREE.Raycaster();
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects([gEnclosure, gInternal, gStand], true);
+
+  for (let i = 0; i < intersects.length; i++){
+    let curr = intersects[i].object;
+    while (curr && !curr.userData.componentId && curr !== scene){
+      curr = curr.parent;
+    }
+    if (curr && curr.userData.componentId){
+      selectComponent(curr.userData.componentId);
+      return;
+    }
+  }
+  selectComponent(null);
+}
+
+/* =========================================================================
+   SIDEBAR UI
+   ========================================================================= */
+const SECTIONS = [
+  {num:'1', title:'BIN ENCLOSURE — OUTER SHELL', key:'enclosure', intro:'5 mm HDPE sheet. Panels weld at static joints; lid and door ride on stainless hinges.'},
+  {num:'2', title:'INTERNAL MECHANICAL PARTS', key:'internal', intro:'Tilting flap directs waste into the dry / wet caddies below.'},
+  {num:'3', title:'STAND & BASE PLATE', key:'stand', intro:'Aluminium support pole on a cast flange, bolted to a plywood base plate.'},
+];
+
 function buildSidebar(){
   const root = document.getElementById('sidebar');
   root.innerHTML = '';
+
+  const inspContainer = document.createElement('div');
+  inspContainer.id = 'inspector-container';
+  root.appendChild(inspContainer);
 
   const hudBox = document.createElement('div');
   hudBox.id = 'hud';
   root.appendChild(hudBox);
 
   SECTIONS.forEach(sec=>{
-    const wrap = document.createElement('div'); wrap.className='section';
+    const wrap = document.createElement('div'); wrap.className='section'; wrap.dataset.sec = sec.key;
     const head = document.createElement('div'); head.className='sec-head';
     head.innerHTML = '<span class="num">'+sec.num+'</span><span>'+sec.title+'</span><span class="chev">▾</span>';
     head.onclick = ()=> wrap.classList.toggle('collapsed');
@@ -757,7 +1106,7 @@ function buildSidebar(){
     const p = document.createElement('div'); p.className='info-p'; p.textContent = sec.intro;
     body.appendChild(p);
     for (const key in PARAMS[sec.key]){
-      body.appendChild(fieldEl(sec.key, key, PARAMS[sec.key][key]));
+      body.appendChild(fieldEl(sec.key, key, PARAMS[sec.key][key], false));
     }
     wrap.appendChild(head); wrap.appendChild(body); root.appendChild(wrap);
   });
@@ -808,24 +1157,41 @@ function buildSidebar(){
     '4.4 &nbsp;<b>M3.5×10 screws</b> — <span class="r">qty 16</span>, hinge / latch mounting';
   hwrap.appendChild(hbody);
   root.appendChild(hwrap);
+
+  renderInspector();
 }
 
-function fieldEl(sectionKey, key, def){
-  const el = document.createElement('div'); el.className='field' + (def.assumed?' assumed':'');
+function fieldEl(sectionKey, key, def, isInspector){
+  const el = document.createElement('div');
+  el.className = 'field' + (def.assumed ? ' assumed' : '');
+  if (!isInspector) el.id = `field-${sectionKey}-${key}`;
   const label = document.createElement('label');
-  label.innerHTML = '<span class="fname">'+def.label+'</span><span class="fval" id="val-'+sectionKey+'-'+key+'">'+fmt(def.v)+'</span>';
+  const valId = (isInspector ? 'insp-val-' : 'val-') + sectionKey + '-' + key;
+  label.innerHTML = `<span class="fname">${def.label}</span><span class="fval" id="${valId}">${fmt(def.v)}</span>`;
   const input = document.createElement('input');
-  input.type='range'; input.min=def.min; input.max=def.max; input.step=def.step; input.value=def.v;
-  input.id = 'in-'+sectionKey+'-'+key;
-  input.addEventListener('input', ()=>{
+  input.type = 'range'; input.min = def.min; input.max = def.max; input.step = def.step; input.value = def.v;
+  input.id = (isInspector ? 'insp-in-' : 'in-') + sectionKey + '-' + key;
+  input.addEventListener('input', () => {
     def.v = parseFloat(input.value);
-    document.getElementById('val-'+sectionKey+'-'+key).textContent = fmt(def.v);
+    const v1 = document.getElementById('val-' + sectionKey + '-' + key);
+    if (v1) v1.textContent = fmt(def.v);
+    const i1 = document.getElementById('in-' + sectionKey + '-' + key);
+    if (i1) i1.value = def.v;
+    const v2 = document.getElementById('insp-val-' + sectionKey + '-' + key);
+    if (v2) v2.textContent = fmt(def.v);
+    const i2 = document.getElementById('insp-in-' + sectionKey + '-' + key);
+    if (i2) i2.value = def.v;
     build();
   });
-  el.appendChild(label); el.appendChild(input);
-  const src = document.createElement('div'); src.className='note'; src.style.color = def.assumed ? 'var(--warn)' : 'var(--muted)';
-  src.textContent = def.src;
-  el.appendChild(src);
+  el.appendChild(label);
+  el.appendChild(input);
+  if (!isInspector){
+    const src = document.createElement('div');
+    src.className = 'note';
+    src.style.color = def.assumed ? 'var(--warn)' : 'var(--muted)';
+    src.textContent = def.src;
+    el.appendChild(src);
+  }
   return el;
 }
 function rangeEl(labelText, key, obj, min,max,step, fmtFn){
