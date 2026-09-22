@@ -4,15 +4,26 @@ Interactive parametric 3D model of the HDPE bin enclosure and stand.
 
 ## How to Open
 
-### In Windows:
-1. Open this folder in **Windows File Explorer** (if using an editor: right-click `index.html` → **Reveal in File Explorer**).
-2. Right-click **`index.html`** → **Open with** → **Google Chrome** (or Edge / Firefox).
+### Option 1: Terminal Command
+Run this in your terminal (PowerShell):
+```powershell
+Start-Process index.html
+```
+*(If using Command Prompt: `start index.html` | Mac: `open index.html`)*
 
-*(Note: Clicking `index.html` inside a code editor will only view the code text, not open the 3D viewer).*
+---
 
-### Online (GitHub Pages):
+### Option 2: Windows File Explorer
+1. Right-click **`index.html`** in the left sidebar → click **Reveal in File Explorer**.
+2. Double-click **`index.html`** (or right-click → **Open with** → Chrome / Edge).
+
+---
+
+### Option 3: Online (GitHub Pages)
 Enable GitHub Pages in repo **Settings** → **Pages** → choose `main` branch to view directly at:  
 `https://siansusan.github.io/dustbin/`
+
+---
 
 ## Controls
 
