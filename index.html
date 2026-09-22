@@ -56,8 +56,15 @@
   /* ---- main layout ---- */
   #main{flex:1 1 auto; display:flex; min-height:0;}
   #viewport{flex:1 1 auto; position:relative; min-width:0;}
-  #canvas-wrap{position:absolute; inset:0;}
-  canvas{display:block;}
+  #canvas-wrap{position:absolute; inset:0; touch-action:none; cursor:grab;}
+  #canvas-wrap:active{cursor:grabbing;}
+  canvas{display:block; touch-action:none;}
+
+  #controls-hint{
+    position:absolute; right:14px; bottom:14px; z-index:5; font-family:var(--mono); font-size:11px;
+    color:var(--muted); background:color-mix(in srgb, var(--panel) 85%, transparent); border:1px solid var(--line);
+    border-radius:6px; padding:6px 10px; pointer-events:none; backdrop-filter:blur(4px);
+  }
 
   #sidebar{
     width:340px; flex:0 0 340px; border-left:1px solid var(--line); background:var(--panel);
@@ -120,7 +127,7 @@
   #hud{
     position:absolute; left:14px; bottom:14px; z-index:5; font-family:var(--mono); font-size:11px;
     color:var(--muted); background:color-mix(in srgb, var(--panel) 85%, transparent); border:1px solid var(--line);
-    border-radius:8px; padding:8px 12px; max-width:340px; line-height:1.6; backdrop-filter:blur(4px);
+    border-radius:8px; padding:8px 12px; max-width:340px; line-height:1.6; backdrop-filter:blur(4px); pointer-events:none;
   }
   #hud b{color:var(--ink);}
 
@@ -146,6 +153,12 @@
     <button class="tbtn" data-view="top">Top</button>
   </div>
   <div class="tb-sep"></div>
+  <div class="tb-group" id="focus-btns">
+    <button class="tbtn active" data-focus="bin" title="Orbit around the bin">Focus: Bin</button>
+    <button class="tbtn" data-focus="stand" title="Orbit around the stand">Focus: Stand</button>
+    <button class="tbtn" data-focus="all" title="Orbit around entire scene">Focus: Both</button>
+  </div>
+  <div class="tb-sep"></div>
   <div class="tb-group">
     <button class="tbtn" id="btn-cutaway">Cutaway</button>
     <button class="tbtn" id="btn-labels">Labels</button>
@@ -163,6 +176,7 @@
     <div id="canvas-wrap"></div>
     <div id="loading">loading three.js…</div>
     <div id="hud"></div>
+    <div id="controls-hint">Left-drag: Rotate • Right-drag: Pan • Scroll: Zoom • Double-click: Center</div>
   </div>
   <div id="sidebar"></div>
 </div>
@@ -279,10 +293,37 @@ function initScene(){
   labelRenderer.domElement.style.pointerEvents = 'none';
   wrap.appendChild(labelRenderer.domElement);
 
-  controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true; controls.dampingFactor = 0.08;
-  controls.enablePan = true; controls.screenSpacePanning = true;
-  controls.minDistance = 8; controls.maxDistance = 600;
+  controls = new THREE.OrbitControls(camera, wrap);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.12;
+  controls.rotateSpeed = 1.0;
+  controls.panSpeed = 1.0;
+  controls.zoomSpeed = 1.2;
+  controls.enablePan = true;
+  controls.screenSpacePanning = true;
+  controls.minDistance = 2;
+  controls.maxDistance = 1000;
+  controls.maxPolarAngle = Math.PI;
+
+  wrap.addEventListener('dblclick', (event) => {
+    const rect = wrap.getBoundingClientRect();
+    const mouse = new THREE.Vector2(
+      ((event.clientX - rect.left) / wrap.clientWidth) * 2 - 1,
+      -((event.clientY - rect.top) / wrap.clientHeight) * 2 + 1
+    );
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects([gEnclosure, gInternal, gStand], true);
+    if (intersects.length > 0) {
+      let curr = intersects[0].object;
+      let isStand = false;
+      while (curr) {
+        if (curr === gStand) { isStand = true; break; }
+        curr = curr.parent;
+      }
+      setFocus(isStand ? 'stand' : 'bin');
+    }
+  });
 
   scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.1));
   const key = new THREE.DirectionalLight(0xffffff, 0.9);
@@ -561,6 +602,7 @@ function build_(){
   });
 
   gEnclosure.position.set(binOffsetX,0,0);
+  gInternal.position.set(binOffsetX,0,0);
 
   /* ---------------- INTERNAL PARTS ---------------- */
   if (!cut){
@@ -648,8 +690,11 @@ function updateHud(e,it,s,d,v){
 }
 
 /* =========================================================================
-   VIEWS
+   VIEWS & FOCUS
    ========================================================================= */
+let currentFocus = 'bin';
+let currentView = 'iso';
+
 function frameTarget(){
   const v = PARAMS.view;
   const e = mapv(PARAMS.enclosure), s = mapv(PARAMS.stand);
@@ -657,26 +702,41 @@ function frameTarget(){
     const totalH = s.plate_thick + s.flange_height + s.pole_length + e.wall_height + e.wall_thickness*2;
     return { x:0, y: totalH/2, size: totalH };
   }
-  // bin sits separately, offset along +X from the stand (both on the ground)
   const standH = s.plate_thick + s.flange_height + s.pole_length;
   const binH = e.wall_height + e.wall_thickness*2;
-  const maxH = Math.max(standH, binH);
   const binOffsetX = s.plate_width/2 + s.bin_gap + e.overall_width/2;
+
+  if (currentFocus === 'bin'){
+    return { x: binOffsetX, y: binH/2, size: Math.max(binH, e.overall_width, e.overall_depth) * 1.5 };
+  }
+  if (currentFocus === 'stand'){
+    return { x: 0, y: standH/2, size: standH * 1.05 };
+  }
+  // 'all'
+  const maxH = Math.max(standH, binH);
   const xSpan = binOffsetX + e.overall_width/2 + s.plate_width/2;
   const size = Math.max(maxH, xSpan) * 1.05;
   return { x: binOffsetX/2, y: maxH/2, size: size };
 }
+
 function setView(name){
+  if (name) currentView = name;
   const t = frameTarget();
   controls.target.set(t.x, t.y, 0);
   const dist = t.size*1.15 + 20;
-  if (name==='iso') camera.position.set(t.x+dist*0.62, t.y+t.size*0.45, dist*0.62);
-  if (name==='front') camera.position.set(t.x, t.y, dist*0.9);
-  if (name==='side') camera.position.set(t.x+dist*0.9, t.y, 0);
-  if (name==='top') camera.position.set(t.x, t.y+dist*0.95, 0.01);
-  camera.near = 0.5; camera.far = dist*6; camera.updateProjectionMatrix();
+  if (currentView==='iso') camera.position.set(t.x+dist*0.62, t.y+t.size*0.45, dist*0.62);
+  if (currentView==='front') camera.position.set(t.x, t.y, dist*0.9);
+  if (currentView==='side') camera.position.set(t.x+dist*0.9, t.y, 0);
+  if (currentView==='top') camera.position.set(t.x, t.y+dist*0.95, 0.01);
+  camera.near = 0.5; camera.far = dist*8; camera.updateProjectionMatrix();
   controls.update();
-  document.querySelectorAll('#view-btns .tbtn').forEach(b=>b.classList.toggle('active', b.dataset.view===name));
+  document.querySelectorAll('#view-btns .tbtn').forEach(b=>b.classList.toggle('active', b.dataset.view===currentView));
+}
+
+function setFocus(focusName){
+  currentFocus = focusName;
+  document.querySelectorAll('#focus-btns .tbtn').forEach(b=>b.classList.toggle('active', b.dataset.focus===focusName));
+  setView(currentView);
 }
 
 /* =========================================================================
@@ -803,6 +863,7 @@ function fmt(n){
    ========================================================================= */
 function wireTopbar(){
   document.querySelectorAll('#view-btns .tbtn').forEach(b=> b.addEventListener('click', ()=> setView(b.dataset.view)));
+  document.querySelectorAll('#focus-btns .tbtn').forEach(b=> b.addEventListener('click', ()=> setFocus(b.dataset.focus)));
   const btnCut = document.getElementById('btn-cutaway');
   btnCut.addEventListener('click', ()=>{ PARAMS.view.cutaway = !PARAMS.view.cutaway; btnCut.classList.toggle('active', PARAMS.view.cutaway); build(); });
   const btnLbl = document.getElementById('btn-labels');
